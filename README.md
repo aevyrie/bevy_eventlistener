@@ -1,5 +1,3 @@
-<div align="center">
-
 # Event listeners, bubbling, and callbacks for Bevy
 
 Oh my!
