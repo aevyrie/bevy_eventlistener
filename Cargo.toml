@@ -1,9 +1,17 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [package]
 name = "bevy_eventlistener"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 bevy = "0.10"
+
+[dev-dependencies]
+bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.1" }
+rand = "0.8"

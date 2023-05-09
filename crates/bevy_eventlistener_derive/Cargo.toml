@@ -1,0 +1,13 @@
+[package]
+name = "bevy_eventlistener_derive"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+bevy_eventlistener = { path = "../../../bevy_eventlistener" }
+quote = "1"
+syn = "2"
+proc-macro2 = "1"

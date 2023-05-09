@@ -8,10 +8,7 @@ use crate::{
 /// Bubbles [`EntityEvent`]s up the entity hierarchy, running  callbacks.
 pub fn execute<E: EntityEvent + 'static>(world: &mut World) {
     world.resource_scope(|world, mut callbacks: Mut<ListenerGraph<E>>| {
-        world.insert_resource(ListenerGraph::<E>::default());
-
         let callbacks = &mut *callbacks;
-
         for (event, root_node) in callbacks.events.iter() {
             let mut this_node = *root_node;
             'bubble_traversal: while let Some((callback, next_node)) =
