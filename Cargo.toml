@@ -10,8 +10,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.10"
+bevy = { version = "0.10", default-features = false }
 
 [dev-dependencies]
 bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.1" }
 rand = "0.8"
+criterion = "0.5"
+
+[[bench]]
+name = "event_listeners_bench"
+harness = false

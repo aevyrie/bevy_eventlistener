@@ -1,30 +1,13 @@
 use bevy::{prelude::*, utils::HashMap};
 
-use crate::{callbacks::CallbackSystem, EntityEvent, On};
-
-/// Determines whether an event should continue to bubble up the entity hierarchy.
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Bubble {
-    /// Allows this event to bubble up to its parent.
-    #[default]
-    Up,
-    /// Stops this event from bubbling to the next parent.
-    Burst,
-}
-
-impl Bubble {
-    /// Stop this event from bubbling to the next parent.
-    pub fn burst(&mut self) {
-        *self = Bubble::Burst;
-    }
-}
+use crate::{callbacks::CallbackSystem, on_event::On, EntityEvent};
 
 /// In order to traverse the entity hierarchy and read events without requiring `Clone`, we need to
 /// extract the callbacks out of their components before they can be run. This is because running
 /// callbacks requires mutable access to the [`World`], which we can't do if we are also trying to
 /// mutate the [`On`]'s inner callback state via `run` at the same time.
 #[derive(Resource)]
-pub struct ListenerGraph<E: EntityEvent> {
+pub struct EventDispatcher<E: EntityEvent> {
     /// All the events of type `E` that were emitted this frame, and encountered an [`On<E>`] while
     /// traversing the entity hierarchy. The `Entity` in the tuple is the root node to use when
     /// traversing the listener graph.
@@ -42,20 +25,20 @@ pub struct ListenerGraph<E: EntityEvent> {
     pub(crate) listener_graph: HashMap<Entity, (CallbackSystem<E>, Option<Entity>)>,
 }
 
-impl<E: EntityEvent> ListenerGraph<E> {
+impl<E: EntityEvent> EventDispatcher<E> {
     /// For each event, we need to build a chain of event listeners in the entity tree starting at
     /// the event's target. This does not need a node for every entity in the tree, instead, only
     /// the entities with event listeners are included.
     pub(crate) fn build(
         mut events: EventReader<E>,
         mut listeners: Query<(Option<&mut On<E>>, Option<&Parent>)>,
-        mut callbacks: ResMut<ListenerGraph<E>>,
+        mut dispatcher: ResMut<EventDispatcher<E>>,
     ) {
-        callbacks.events.clear();
-        callbacks.listener_graph.clear();
+        dispatcher.events.clear();
+        dispatcher.listener_graph.clear();
 
         for event in events.iter() {
-            build_branch_depth_first(event, &mut callbacks, &mut listeners);
+            build_branch_depth_first(event, &mut dispatcher, &mut listeners);
         }
     }
 
@@ -63,7 +46,7 @@ impl<E: EntityEvent> ListenerGraph<E> {
     /// moved them from when building the tree.
     pub(crate) fn cleanup(
         mut listeners: Query<&mut On<E>>,
-        mut callbacks: ResMut<ListenerGraph<E>>,
+        mut callbacks: ResMut<EventDispatcher<E>>,
     ) {
         for (entity, (callback, _)) in callbacks.listener_graph.drain() {
             if let Ok(mut listener) = listeners.get_mut(entity) {
@@ -78,10 +61,10 @@ impl<E: EntityEvent> ListenerGraph<E> {
 /// as nodes to the graph.
 fn build_branch_depth_first<E: EntityEvent>(
     event: &E,
-    callbacks: &mut ResMut<ListenerGraph<E>>,
+    dispatcher: &mut ResMut<EventDispatcher<E>>,
     listeners: &mut Query<(Option<&mut On<E>>, Option<&Parent>)>,
 ) {
-    let graph = &mut callbacks.listener_graph;
+    let graph = &mut dispatcher.listener_graph;
     let mut this_node = event.target();
     let mut prev_node = None;
     let mut first_listener = None;
@@ -91,6 +74,9 @@ fn build_branch_depth_first<E: EntityEvent>(
             // If the current entity is already in the map, use it to jump ahead
             if first_listener.is_none() {
                 first_listener = Some(this_node);
+            }
+            if prev_node.is_none() {
+                break; // We can break if we aren't in the middle of mapping a path
             }
             match next_node {
                 Some(next_node) => this_node = *next_node,
@@ -122,18 +108,18 @@ fn build_branch_depth_first<E: EntityEvent>(
             break;
         }
 
-        if !event.bubbles() {
+        if !event.can_bubble() {
             break;
         }
     }
 
     if let Some(first_listener) = first_listener {
         // Only add events if they interact with an event listener.
-        callbacks.events.push((event.to_owned(), first_listener));
+        dispatcher.events.push((event.to_owned(), first_listener));
     }
 }
 
-impl<E: EntityEvent> Default for ListenerGraph<E> {
+impl<E: EntityEvent> Default for EventDispatcher<E> {
     fn default() -> Self {
         Self {
             events: Vec::new(),
