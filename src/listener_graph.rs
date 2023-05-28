@@ -1,4 +1,7 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
 
 use crate::{
     callbacks::{CallbackSystem, Listened},
@@ -6,10 +9,12 @@ use crate::{
     EntityEvent,
 };
 
-/// In order to traverse the entity hierarchy and read events without requiring `Clone`, we need to
-/// extract the callbacks out of their components before they can be run. This is because running
-/// callbacks requires mutable access to the [`World`], which we can't do if we are also trying to
-/// mutate the [`On`]'s inner callback state via `run` at the same time.
+/// Builds and executes the event listener callback graph.
+///
+/// To traverse the entity hierarchy and read events without requiring `Clone`, we need to extract
+/// the callbacks out of their components before they can be run. This is because running callbacks
+/// requires mutable access to the [`World`], which we can't do if we are also trying to mutate the
+/// [`On`]'s inner callback state via `run` at the same time.
 #[derive(Resource)]
 pub struct EventDispatcher<E: EntityEvent> {
     /// All the events of type `E` that were emitted this frame, and encountered an [`On<E>`] while
@@ -41,8 +46,18 @@ impl<E: EntityEvent> EventDispatcher<E> {
         dispatcher.events.clear();
         dispatcher.listener_graph.clear();
 
+        let mut dead_branch_nodes = HashSet::new();
+
         for event in events.iter() {
-            build_branch_depth_first(event, &mut dispatcher, &mut listeners);
+            if dead_branch_nodes.contains(&event.target()) {
+                continue;
+            }
+            build_branch_depth_first(
+                event,
+                &mut dispatcher,
+                &mut listeners,
+                &mut dead_branch_nodes,
+            );
         }
     }
 
@@ -97,13 +112,12 @@ fn build_branch_depth_first<E: EntityEvent>(
     event: &E,
     dispatcher: &mut ResMut<EventDispatcher<E>>,
     listeners: &mut Query<(Option<&mut On<E>>, Option<&Parent>)>,
+    dead_branch_nodes: &mut HashSet<Entity>,
 ) {
     let graph = &mut dispatcher.listener_graph;
     let mut this_node = event.target();
     let mut prev_node = None;
     let mut first_listener = None;
-
-    // TODO: implement a dead-end cache for tree building. If we reach the root without finding anything, we should store the starting node, so any future traversals know that this is a dead branch.
 
     loop {
         if let Some((_, next_node)) = graph.get(&this_node) {
@@ -136,7 +150,15 @@ fn build_branch_depth_first<E: EntityEvent>(
             }
             match parent {
                 Some(parent) => this_node = **parent,
-                None => break, // Bubble reached the surface!
+                None => {
+                    if first_listener.is_none() {
+                        // No listeners were found before reaching the root of the branch. To
+                        // prevent other events re-traversing this dead branch, we record the target
+                        // as belonging to a dad branch.
+                        dead_branch_nodes.insert(event.target());
+                    }
+                    break; // Bubble reached the surface!
+                }
             }
         } else {
             // This can be reached if the entity targeted by the event was deleted before

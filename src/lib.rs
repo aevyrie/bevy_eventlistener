@@ -5,8 +5,6 @@ use bevy::prelude::*;
 use listener_graph::EventDispatcher;
 use on_event::EntityEvent;
 
-pub mod prelude {}
-
 pub mod callbacks;
 pub mod listener_graph;
 pub mod on_event;

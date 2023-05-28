@@ -10,7 +10,7 @@ use rand::{seq::IteratorRandom, Rng};
 const LISTENER_DENSITY: f64 = 0.20; // percent of nodes with listeners
 const ENTITY_DEPTH: usize = 64;
 const ENTITY_WIDTH: usize = 100_000;
-const N_EVENTS: usize = 5;
+const N_EVENTS: usize = 50;
 
 #[derive(Clone, EntityEvent)]
 struct TestEvent<const N: usize> {
@@ -26,6 +26,9 @@ fn main() {
         .add_plugin(StressTestPlugin::<2>)
         .add_plugin(StressTestPlugin::<3>)
         .add_plugin(StressTestPlugin::<4>)
+        .add_plugin(EventListenerPlugin::<TestEvent<9>>::default())
+        .add_event::<TestEvent<9>>()
+        .add_system(send_events::<9>)
         .run();
 }
 
@@ -39,7 +42,10 @@ impl<const N: usize> Plugin for StressTestPlugin<N> {
     }
 }
 
-fn send_events<const N: usize>(mut event: EventWriter<TestEvent<N>>, entities: Query<Entity>) {
+fn send_events<const N: usize>(
+    mut event: EventWriter<TestEvent<N>>,
+    entities: Query<Entity, Without<Children>>,
+) {
     let mut rng = rand::thread_rng();
     let target = entities.iter().choose(&mut rng).unwrap();
     (0..N_EVENTS).for_each(|_| {
