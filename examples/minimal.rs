@@ -41,47 +41,23 @@ struct Armor(u16);
 fn setup(mut commands: Commands) {
     commands
         .spawn((
-            Name::new("Goblin"),
+            Name::new("👺 Goblin"),
             HitPoints(50),
             On::<Attack>::run_callback(take_damage),
         ))
         .with_children(|parent| {
             parent.spawn((
-                Name::new("Helmet"),
+                Name::new("🪖  Helmet"),
                 Armor(5),
                 On::<Attack>::run_callback(block_attack),
             ));
             parent.spawn((
-                Name::new("Skirt"),
+                Name::new("🧦 Socks"),
                 Armor(10),
                 On::<Attack>::run_callback(block_attack),
             ));
             parent.spawn((
-                Name::new("Chainmail"),
-                Armor(15),
-                On::<Attack>::run_callback(block_attack),
-            ));
-        });
-
-    commands
-        .spawn((
-            Name::new("Bandit"),
-            HitPoints(50),
-            On::<Attack>::run_callback(take_damage),
-        ))
-        .with_children(|parent| {
-            parent.spawn((
-                Name::new("Gloves"),
-                Armor(5),
-                On::<Attack>::run_callback(block_attack),
-            ));
-            parent.spawn((
-                Name::new("Pants"),
-                Armor(10),
-                On::<Attack>::run_callback(block_attack),
-            ));
-            parent.spawn((
-                Name::new("Jacket"),
+                Name::new("👕 Shirt"),
                 Armor(15),
                 On::<Attack>::run_callback(block_attack),
             ));
@@ -104,10 +80,13 @@ fn block_attack(mut attack: ResMut<Listened<Attack>>, armor: Query<(&Armor, &Nam
     let (armor, armor_name) = armor.get(attack.target).unwrap();
     let damage = attack.damage.saturating_sub(**armor);
     if damage > 0 {
-        info!("HIT: {} damage passed through {}", damage, armor_name);
+        info!(
+            "⚔️  Hit    {} was unable to block {} damage.",
+            armor_name, damage
+        );
         attack.damage = damage;
     } else {
-        info!("BLOCK: {} blocked an attack.", armor_name);
+        info!("🛡️  Block  {} blocked an attack.", armor_name);
         attack.stop_propagation(); // Armor stopped the attack, the event stops here.
     }
 }
@@ -117,14 +96,16 @@ fn take_damage(
     attack: Res<Listened<Attack>>,
     mut hp: Query<(&mut HitPoints, &Name)>,
     mut commands: Commands,
+    mut app_exit: EventWriter<bevy::app::AppExit>,
 ) {
     let (mut hp, name) = hp.get_mut(attack.listener()).unwrap();
     **hp = hp.saturating_sub(attack.damage);
 
     if **hp > 0 {
-        info!("Ouch! {} has {:.1} HP.", name, hp.0);
+        info!("          {} has 🩸 {:.1} HP.", name, hp.0);
     } else {
-        warn!("{} has died a gruesome death.", name);
-        commands.entity(attack.listener()).despawn_recursive()
+        warn!("💀        {} has died a gruesome death.", name);
+        commands.entity(attack.listener()).despawn_recursive();
+        app_exit.send(bevy::app::AppExit);
     }
 }

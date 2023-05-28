@@ -7,7 +7,7 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-bevy_eventlistener = { path = "../../../bevy_eventlistener" }
+bevy_eventlistener = { path = "../../bevy_eventlistener" }
 quote = "1"
 syn = "2"
 proc-macro2 = "1"

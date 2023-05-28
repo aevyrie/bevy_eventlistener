@@ -1,6 +1,10 @@
 use bevy::{prelude::*, utils::HashMap};
 
-use crate::{callbacks::CallbackSystem, on_event::On, EntityEvent};
+use crate::{
+    callbacks::{CallbackSystem, Listened},
+    on_event::On,
+    EntityEvent,
+};
 
 /// In order to traverse the entity hierarchy and read events without requiring `Clone`, we need to
 /// extract the callbacks out of their components before they can be run. This is because running
@@ -54,6 +58,36 @@ impl<E: EntityEvent> EventDispatcher<E> {
             }
         }
     }
+
+    /// Bubbles [`EntityEvent`]s up the entity hierarchy, running  callbacks.
+    pub fn bubble_events(world: &mut World) {
+        world.resource_scope(|world, mut dispatcher: Mut<EventDispatcher<E>>| {
+            let dispatcher = dispatcher.as_mut();
+            dispatcher.events.iter().for_each(|(event, root_node)| {
+                let mut this_node = *root_node;
+
+                world.insert_resource(Listened {
+                    listener: this_node,
+                    event_data: event.to_owned(),
+                    propagate: true,
+                });
+                while let Some((callback, next_node)) =
+                    dispatcher.listener_graph.get_mut(&this_node)
+                {
+                    world.resource_mut::<Listened<E>>().listener = this_node;
+                    callback.run(world);
+                    if !event.can_bubble() || world.resource::<Listened<E>>().propagate == false {
+                        break;
+                    }
+                    match next_node {
+                        Some(next_node) => this_node = *next_node,
+                        _ => break,
+                    }
+                }
+                world.remove_resource::<Listened<E>>();
+            });
+        });
+    }
 }
 
 /// Build a branch of the event bubbling graph, starting from the target entity, traversing up the
@@ -68,6 +102,8 @@ fn build_branch_depth_first<E: EntityEvent>(
     let mut this_node = event.target();
     let mut prev_node = None;
     let mut first_listener = None;
+
+    // TODO: implement a dead-end cache for tree building. If we reach the root without finding anything, we should store the starting node, so any future traversals know that this is a dead branch.
 
     loop {
         if let Some((_, next_node)) = graph.get(&this_node) {

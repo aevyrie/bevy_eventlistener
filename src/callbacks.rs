@@ -2,35 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 
-use crate::{listener_graph::EventDispatcher, EntityEvent};
-
-/// Bubbles [`EntityEvent`]s up the entity hierarchy, running  callbacks.
-pub fn bubble_events<E: EntityEvent + 'static>(world: &mut World) {
-    world.resource_scope(|world, mut dispatcher: Mut<EventDispatcher<E>>| {
-        let dispatcher = dispatcher.as_mut();
-        dispatcher.events.iter().for_each(|(event, root_node)| {
-            let mut this_node = *root_node;
-
-            world.insert_resource(Listened {
-                listener: this_node,
-                event_data: event.to_owned(),
-                bubble: Bubble::Up,
-            });
-            while let Some((callback, next_node)) = dispatcher.listener_graph.get_mut(&this_node) {
-                world.resource_mut::<Listened<E>>().listener = this_node;
-                callback.run(world);
-                if !event.can_bubble() || world.resource::<Listened<E>>().bubble == Bubble::Burst {
-                    break;
-                }
-                match next_node {
-                    Some(next_node) => this_node = *next_node,
-                    _ => break,
-                }
-            }
-            world.remove_resource::<Listened<E>>();
-        });
-    });
-}
+use crate::EntityEvent;
 
 pub enum CallbackSystem<E: EntityEvent> {
     Empty(PhantomData<E>),
@@ -84,7 +56,7 @@ pub struct Listened<E: EntityEvent> {
     pub(crate) listener: Entity,
     /// Event-specific information.
     pub(crate) event_data: E,
-    pub(crate) bubble: Bubble,
+    pub(crate) propagate: bool,
 }
 
 impl<E: EntityEvent> Listened<E> {
@@ -97,7 +69,7 @@ impl<E: EntityEvent> Listened<E> {
 
     /// When called, the event will stop bubbling up the hierarchy to its parent.
     pub fn stop_propagation(&mut self) {
-        self.bubble.burst()
+        self.propagate = false;
     }
 }
 
@@ -112,22 +84,5 @@ impl<E: EntityEvent> std::ops::Deref for Listened<E> {
 impl<E: EntityEvent> std::ops::DerefMut for Listened<E> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.event_data
-    }
-}
-
-/// Determines whether an event should continue to bubble up the entity hierarchy.
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Bubble {
-    /// Allows this event to bubble up to its parent.
-    #[default]
-    Up,
-    /// Stops this event from bubbling to the next parent.
-    Burst,
-}
-
-impl Bubble {
-    /// Stop this event from bubbling to the next parent.
-    pub fn burst(&mut self) {
-        *self = Bubble::Burst;
     }
 }

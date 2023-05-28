@@ -5,49 +5,61 @@ use bevy_eventlistener::{
     EventListenerPlugin,
 };
 use bevy_eventlistener_derive::EntityEvent;
+use rand::{seq::IteratorRandom, Rng};
 
-const DENSE_LISTENERS: bool = false;
-const ENTITY_DEPTH: usize = 20;
-const ENTITY_WIDTH: usize = 500;
-const N_EVENTS: usize = 1000;
+const LISTENER_DENSITY: f64 = 0.20; // percent of nodes with listeners
+const ENTITY_DEPTH: usize = 64;
+const ENTITY_WIDTH: usize = 100_000;
+const N_EVENTS: usize = 5;
+
+#[derive(Clone, EntityEvent)]
+struct TestEvent<const N: usize> {
+    #[target]
+    target: Entity,
+}
 
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
         .add_plugin(LogPlugin::default())
-        .add_plugin(EventListenerPlugin::<EventFoo>::default())
-        .add_event::<EventFoo>()
-        .insert_resource(Target(Entity::PLACEHOLDER))
-        .add_startup_system(move |mut commands: Commands, mut target: ResMut<Target>| {
-            let event_listener = || On::<EventFoo>::run_callback(|| {});
-            for _ in 0..ENTITY_WIDTH {
-                let mut parent = commands.spawn(event_listener()).id();
-                for i in 1..=ENTITY_DEPTH {
-                    target.0 = if i == ENTITY_DEPTH || DENSE_LISTENERS {
-                        commands.spawn(event_listener()).id()
-                    } else {
-                        commands.spawn_empty().id()
-                    };
-                    commands.entity(parent).add_child(target.0);
-                    parent = target.0;
-                }
-            }
-        })
-        .add_system(send_events)
+        .add_plugin(StressTestPlugin::<1>)
+        .add_plugin(StressTestPlugin::<2>)
+        .add_plugin(StressTestPlugin::<3>)
+        .add_plugin(StressTestPlugin::<4>)
         .run();
 }
 
-#[derive(Clone, EntityEvent)]
-struct EventFoo {
-    #[target]
-    target: Entity,
+struct StressTestPlugin<const N: usize>;
+impl<const N: usize> Plugin for StressTestPlugin<N> {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(EventListenerPlugin::<TestEvent<N>>::default())
+            .add_event::<TestEvent<N>>()
+            .add_startup_system(setup::<N>)
+            .add_system(send_events::<N>);
+    }
 }
 
-#[derive(Resource)]
-struct Target(Entity);
-
-fn send_events(target: Res<Target>, mut event: EventWriter<EventFoo>) {
+fn send_events<const N: usize>(mut event: EventWriter<TestEvent<N>>, entities: Query<Entity>) {
+    let mut rng = rand::thread_rng();
+    let target = entities.iter().choose(&mut rng).unwrap();
     (0..N_EVENTS).for_each(|_| {
-        event.send(EventFoo { target: target.0 });
+        event.send(TestEvent::<N> { target });
     });
+}
+
+fn setup<const N: usize>(mut commands: Commands) {
+    let mut rng = rand::thread_rng();
+    let event_listener = || On::<TestEvent<N>>::run_callback(|| {});
+    for _ in 0..ENTITY_WIDTH {
+        let mut parent = commands.spawn(event_listener()).id();
+        for i in 1..=ENTITY_DEPTH {
+            let child = if i == ENTITY_DEPTH || rng.gen_bool(LISTENER_DENSITY) {
+                commands.spawn(event_listener()).id()
+            } else {
+                commands.spawn_empty().id()
+            };
+            commands.entity(parent).add_child(child);
+            parent = child;
+        }
+    }
 }

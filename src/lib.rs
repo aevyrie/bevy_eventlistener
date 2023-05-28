@@ -5,6 +5,8 @@ use bevy::prelude::*;
 use listener_graph::EventDispatcher;
 use on_event::EntityEvent;
 
+pub mod prelude {}
+
 pub mod callbacks;
 pub mod listener_graph;
 pub mod on_event;
@@ -24,7 +26,7 @@ impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
             .add_systems(
                 (
                     EventDispatcher::<E>::build.run_if(on_event::<E>()),
-                    callbacks::bubble_events::<E>.run_if(on_event::<E>()),
+                    EventDispatcher::<E>::bubble_events.run_if(on_event::<E>()),
                     EventDispatcher::<E>::cleanup.run_if(on_event::<E>()),
                 )
                     .chain(),
