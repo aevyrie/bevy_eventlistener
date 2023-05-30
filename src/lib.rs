@@ -2,12 +2,12 @@
 
 use bevy::prelude::*;
 
-use listener_graph::EventDispatcher;
-use on_event::EntityEvent;
+use event_dispatcher::EventDispatcher;
+use event_listener::EntityEvent;
 
 pub mod callbacks;
-pub mod listener_graph;
-pub mod on_event;
+pub mod event_dispatcher;
+pub mod event_listener;
 
 /// Adds event listening and bubbling support for event `E`.
 pub struct EventListenerPlugin<E>(std::marker::PhantomData<E>);

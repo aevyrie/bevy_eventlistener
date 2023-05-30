@@ -4,8 +4,8 @@ use bevy::{log::LogPlugin, prelude::*, time::common_conditions::on_timer};
 use rand::{seq::IteratorRandom, thread_rng, Rng};
 
 use bevy_eventlistener::{
-    callbacks::Listened,
-    on_event::{EntityEvent, On},
+    callbacks::{Listener, ListenerMut},
+    event_listener::{EntityEvent, On},
     EventListenerPlugin,
 };
 use bevy_eventlistener_derive::EntityEvent;
@@ -41,23 +41,23 @@ struct Armor(u16);
 fn setup(mut commands: Commands) {
     commands
         .spawn((
-            Name::new("👺 Goblin"),
+            Name::new("Goblin"),
             HitPoints(50),
             On::<Attack>::run_callback(take_damage),
         ))
         .with_children(|parent| {
             parent.spawn((
-                Name::new("🪖  Helmet"),
+                Name::new("Helmet"),
                 Armor(5),
                 On::<Attack>::run_callback(block_attack),
             ));
             parent.spawn((
-                Name::new("🧦 Socks"),
+                Name::new("Socks"),
                 Armor(10),
                 On::<Attack>::run_callback(block_attack),
             ));
             parent.spawn((
-                Name::new("👕 Shirt"),
+                Name::new("Shirt"),
                 Armor(15),
                 On::<Attack>::run_callback(block_attack),
             ));
@@ -67,33 +67,30 @@ fn setup(mut commands: Commands) {
 /// A normal bevy system that attacks a piece of armor on a timer.
 fn attack_armor(entities: Query<Entity, With<Armor>>, mut attacks: EventWriter<Attack>) {
     let mut rng = rand::thread_rng();
-    if let Some(entity) = entities.iter().choose(&mut rng) {
-        attacks.send(Attack {
-            target: entity,
-            damage: thread_rng().gen_range(1..20),
-        });
+    if let Some(target) = entities.iter().choose(&mut rng) {
+        let damage = thread_rng().gen_range(1..20);
+        attacks.send(Attack { target, damage });
+        info!("⚔️  Attack for {} damage", damage);
     }
 }
 
 /// A callback placed on [`Armor`], checking if it absorbed all the [`Attack`] damage.
-fn block_attack(mut attack: ResMut<Listened<Attack>>, armor: Query<(&Armor, &Name)>) {
+fn block_attack(mut attack: ListenerMut<Attack>, armor: Query<(&Armor, &Name)>) {
     let (armor, armor_name) = armor.get(attack.target).unwrap();
     let damage = attack.damage.saturating_sub(**armor);
     if damage > 0 {
-        info!(
-            "⚔️  Hit    {} was unable to block {} damage.",
-            armor_name, damage
-        );
+        info!("🩸 {} damage passed through {}", damage, armor_name);
         attack.damage = damage;
     } else {
-        info!("🛡️  Block  {} blocked an attack.", armor_name);
+        info!("🛡️  {} damage blocked by {}", attack.damage, armor_name);
         attack.stop_propagation(); // Armor stopped the attack, the event stops here.
     }
 }
 
-/// A callback on the armor wearer, triggered when a piece of armor is not able to block an attack.
+/// A callback on the armor wearer, triggered when a piece of armor is not able to block an attack,
+/// or the wearer is attacked directly.
 fn take_damage(
-    attack: Res<Listened<Attack>>,
+    attack: Listener<Attack>,
     mut hp: Query<(&mut HitPoints, &Name)>,
     mut commands: Commands,
     mut app_exit: EventWriter<bevy::app::AppExit>,
@@ -102,9 +99,9 @@ fn take_damage(
     **hp = hp.saturating_sub(attack.damage);
 
     if **hp > 0 {
-        info!("          {} has 🩸 {:.1} HP.", name, hp.0);
+        info!("{} has {:.1} HP", name, hp.0);
     } else {
-        warn!("💀        {} has died a gruesome death.", name);
+        warn!("💀 {} has died a gruesome death", name);
         commands.entity(attack.listener()).despawn_recursive();
         app_exit.send(bevy::app::AppExit);
     }

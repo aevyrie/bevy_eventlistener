@@ -4,8 +4,8 @@ use bevy::{
 };
 
 use crate::{
-    callbacks::{CallbackSystem, Listened},
-    on_event::On,
+    callbacks::{CallbackSystem, ListenerInput},
+    event_listener::On,
     EntityEvent,
 };
 
@@ -18,7 +18,7 @@ use crate::{
 #[derive(Resource)]
 pub struct EventDispatcher<E: EntityEvent> {
     /// All the events of type `E` that were emitted this frame, and encountered an [`On<E>`] while
-    /// traversing the entity hierarchy. The `Entity` in the tuple is the root node to use when
+    /// traversing the entity hierarchy. The `Entity` in the tuple is the leaf node to use when
     /// traversing the listener graph.
     pub(crate) events: Vec<(E, Entity)>,
     /// Traversing the entity hierarchy for each event can visit the same entity multiple times.
@@ -31,7 +31,7 @@ pub struct EventDispatcher<E: EntityEvent> {
     /// - This allows us to jump to the next listener in the hierarchy without unnecessary
     ///   traversal. When bubbling many events of the same type `E` through the same entity tree,
     ///   this can save a significant amount of work.
-    pub(crate) listener_graph: HashMap<Entity, (CallbackSystem<E>, Option<Entity>)>,
+    pub(crate) listener_graph: HashMap<Entity, (CallbackSystem, Option<Entity>)>,
 }
 
 impl<E: EntityEvent> EventDispatcher<E> {
@@ -42,14 +42,23 @@ impl<E: EntityEvent> EventDispatcher<E> {
         mut events: EventReader<E>,
         mut listeners: Query<(Option<&mut On<E>>, Option<&Parent>)>,
         mut dispatcher: ResMut<EventDispatcher<E>>,
+        mut dead_branch_nodes: Local<HashSet<Entity>>,
+        mut target_cache: Local<HashMap<Entity, Entity>>,
     ) {
+        // Reuse allocated memory
         dispatcher.events.clear();
         dispatcher.listener_graph.clear();
-
-        let mut dead_branch_nodes = HashSet::new();
+        dead_branch_nodes.clear();
+        target_cache.clear();
 
         for event in events.iter() {
+            // if the target belongs to a dead branch, exit early.
             if dead_branch_nodes.contains(&event.target()) {
+                continue;
+            }
+            // if the target has already been used to traverse the graph, use the cached value.
+            if let Some(first_listener) = target_cache.get(&event.target()) {
+                dispatcher.events.push((event.to_owned(), *first_listener));
                 continue;
             }
             build_branch_depth_first(
@@ -57,6 +66,7 @@ impl<E: EntityEvent> EventDispatcher<E> {
                 &mut dispatcher,
                 &mut listeners,
                 &mut dead_branch_nodes,
+                &mut target_cache,
             );
         }
     }
@@ -78,28 +88,28 @@ impl<E: EntityEvent> EventDispatcher<E> {
     pub fn bubble_events(world: &mut World) {
         world.resource_scope(|world, mut dispatcher: Mut<EventDispatcher<E>>| {
             let dispatcher = dispatcher.as_mut();
-            dispatcher.events.iter().for_each(|(event, root_node)| {
-                let mut this_node = *root_node;
+            dispatcher.events.drain(..).for_each(|(event_data, leaf)| {
+                let mut listener = leaf;
+                let can_bubble = event_data.can_bubble();
 
-                world.insert_resource(Listened {
-                    listener: this_node,
-                    event_data: event.to_owned(),
+                world.insert_resource(ListenerInput {
+                    listener,
+                    event_data,
                     propagate: true,
                 });
-                while let Some((callback, next_node)) =
-                    dispatcher.listener_graph.get_mut(&this_node)
+                while let Some((callback, next_node)) = dispatcher.listener_graph.get_mut(&listener)
                 {
-                    world.resource_mut::<Listened<E>>().listener = this_node;
+                    world.resource_mut::<ListenerInput<E>>().listener = listener;
                     callback.run(world);
-                    if !event.can_bubble() || world.resource::<Listened<E>>().propagate == false {
+                    if !can_bubble || world.resource::<ListenerInput<E>>().propagate == false {
                         break;
                     }
                     match next_node {
-                        Some(next_node) => this_node = *next_node,
+                        Some(next_node) => listener = *next_node,
                         _ => break,
                     }
                 }
-                world.remove_resource::<Listened<E>>();
+                world.remove_resource::<ListenerInput<E>>();
             });
         });
     }
@@ -113,6 +123,7 @@ fn build_branch_depth_first<E: EntityEvent>(
     dispatcher: &mut ResMut<EventDispatcher<E>>,
     listeners: &mut Query<(Option<&mut On<E>>, Option<&Parent>)>,
     dead_branch_nodes: &mut HashSet<Entity>,
+    target_cache: &mut HashMap<Entity, Entity>,
 ) {
     let graph = &mut dispatcher.listener_graph;
     let mut this_node = event.target();
@@ -152,17 +163,19 @@ fn build_branch_depth_first<E: EntityEvent>(
                 Some(parent) => this_node = **parent,
                 None => {
                     if first_listener.is_none() {
-                        // No listeners were found before reaching the root of the branch. To
-                        // prevent other events re-traversing this dead branch, we record the target
-                        // as belonging to a dad branch.
+                        // No listeners were found when traversing the entire branch. To prevent
+                        // other events re-traversing this dead branch, we record the target as
+                        // belonging to a dead branch.
                         dead_branch_nodes.insert(event.target());
                     }
                     break; // Bubble reached the surface!
                 }
             }
         } else {
-            // This can be reached if the entity targeted by the event was deleted before
-            // the bubbling system could run.
+            // This branch can only be reached if the listeners.get_mut() call fails. Note that the
+            // query allows all components to be optional, which means this can only fail if the
+            // entity no longer exists. This can happen if the entity targeted by the event was
+            // deleted before the bubbling system could run.
             break;
         }
 
@@ -174,6 +187,7 @@ fn build_branch_depth_first<E: EntityEvent>(
     if let Some(first_listener) = first_listener {
         // Only add events if they interact with an event listener.
         dispatcher.events.push((event.to_owned(), first_listener));
+        target_cache.insert(event.target(), first_listener);
     }
 }
 

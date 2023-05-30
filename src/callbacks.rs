@@ -1,23 +1,25 @@
-use std::marker::PhantomData;
-
-use bevy::prelude::*;
+use bevy::{ecs::system::BoxedSystem, prelude::*};
 
 use crate::EntityEvent;
 
-pub enum CallbackSystem<E: EntityEvent> {
-    Empty(PhantomData<E>),
-    New(Box<dyn System<In = (), Out = ()>>),
-    Initialized(Box<dyn System<In = (), Out = ()>>),
+pub trait CallbackSystemTrait: System<In = (), Out = ()> + Reflect {}
+
+#[derive(Default, Debug)]
+pub enum CallbackSystem {
+    #[default]
+    Empty,
+    New(BoxedSystem),
+    Initialized(BoxedSystem),
 }
 
-impl<E: EntityEvent> CallbackSystem<E> {
+impl CallbackSystem {
     pub(crate) fn is_initialized(&self) -> bool {
         matches!(self, CallbackSystem::Initialized(_))
     }
 
     pub(crate) fn run(&mut self, world: &mut World) {
         if !self.is_initialized() {
-            let mut temp = CallbackSystem::Empty(PhantomData);
+            let mut temp = CallbackSystem::Empty;
             std::mem::swap(self, &mut temp);
             if let CallbackSystem::New(mut system) = temp {
                 system.initialize(world);
@@ -30,8 +32,17 @@ impl<E: EntityEvent> CallbackSystem<E> {
         }
     }
 }
+/// A [`SystemParam`](bevy::ecs::system::SystemParam) used to get immutable access the the
+/// [`ListenerInput`] for this callback.
+///
+/// Use this in callback systems to access event data for the event that triggered the callback.
+pub type Listener<'w, E> = Res<'w, ListenerInput<E>>;
 
-pub type ListenedEvent<'w, E> = Res<'w, Listened<E>>;
+/// A [`SystemParam`](bevy::ecs::system::SystemParam) used to get mutable access the the
+/// [`ListenerInput`] for this callback.
+///
+/// Use this in callback systems to access event data for the event that triggered the callback.
+pub type ListenerMut<'w, E> = ResMut<'w, ListenerInput<E>>;
 
 /// Data from an event that triggered an [`On<Event>`](crate::on_event::On) listener, and is
 /// currently bubbling through the entity hierarchy.
@@ -43,7 +54,7 @@ pub type ListenedEvent<'w, E> = Res<'w, Listened<E>>;
 /// # struct MyEvent {
 /// #     foo: usize,
 /// # }
-/// fn my_callback(mut event: ResMut<Listened<MyEvent>>) {
+/// fn my_callback(mut event: ListenerMut<MyEvent>) {
 ///     event.foo += 1; // Mutate the event that is being bubbled
 ///     event.target(); // The entity that was originally targeted
 ///     event.listener(); // The entity that was listening for this event
@@ -51,7 +62,7 @@ pub type ListenedEvent<'w, E> = Res<'w, Listened<E>>;
 /// }
 /// ```
 #[derive(Clone, PartialEq, Debug, Resource)]
-pub struct Listened<E: EntityEvent> {
+pub struct ListenerInput<E: EntityEvent> {
     /// The entity that was listening for this event.
     pub(crate) listener: Entity,
     /// Event-specific information.
@@ -59,7 +70,7 @@ pub struct Listened<E: EntityEvent> {
     pub(crate) propagate: bool,
 }
 
-impl<E: EntityEvent> Listened<E> {
+impl<E: EntityEvent> ListenerInput<E> {
     /// The entity that was listening for this event. Call `target()` to get the entity that this
     /// event originally targeted before it started bubbling through the hierarchy. Note that the
     /// target and listener can be the same entity.
@@ -73,7 +84,7 @@ impl<E: EntityEvent> Listened<E> {
     }
 }
 
-impl<E: EntityEvent> std::ops::Deref for Listened<E> {
+impl<E: EntityEvent> std::ops::Deref for ListenerInput<E> {
     type Target = E;
 
     fn deref(&self) -> &Self::Target {
@@ -81,7 +92,7 @@ impl<E: EntityEvent> std::ops::Deref for Listened<E> {
     }
 }
 
-impl<E: EntityEvent> std::ops::DerefMut for Listened<E> {
+impl<E: EntityEvent> std::ops::DerefMut for ListenerInput<E> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.event_data
     }
