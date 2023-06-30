@@ -46,6 +46,19 @@ the required components, not just UI.
 This library was initially extracted from the `0.13` version of bevy_mod_picking, as it became obvious that
 this is a generically useful feature.
 
+## Performance
+
+Using DOM data from the most complex websites I could find, the stress test example was built to help benchmark the performance of this implementation with a representative dataset. Using a DOM complexity:
+- Depth: 64 (how many levels of children for an entity at the root)
+- Total nodes: 12,800 (total number of entities spawned)
+- Listener density: 20% (what percent of entities have event listeners?)
+
+![image](https://github.com/aevyrie/bevy_eventlistener/assets/2632925/72f75640-8b44-4ace-af67-9898c4c78321)
+
+The blue line can be read as "how long does it take all of these events to bubble up a hierarchy and trigger callbacks at ~20% of the 64 nodes as it traverses depth?". A graph is built for every event as an acceleration structure, which allows us to have linearly scaling performance.
+
+The runtime cost of each event decreases as the total numbe of events increase, this is because graph construction is a fixed cost for each type of event. Adding more events simply amortizes that cost across more events. At 50 events the runtime cost is only ~500ns/event, and about 25us total. To reiterate, this is using an entity hierarchy similar to the most complex websites I could find.
+
 # License
 
 All code in this repository is dual-licensed under either:
