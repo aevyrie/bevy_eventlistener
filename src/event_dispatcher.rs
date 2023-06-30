@@ -11,10 +11,10 @@ use crate::{
 
 /// Builds and executes the event listener callback graph.
 ///
-/// To traverse the entity hierarchy and read events without requiring `Clone`, we need to extract
-/// the callbacks out of their components before they can be run. This is because running callbacks
-/// requires mutable access to the [`World`], which we can't do if we are also trying to mutate the
-/// [`On`]'s inner callback state via `run` at the same time.
+/// To traverse the entity hierarchy and read events without requiring callbacks implement `Clone`,
+/// we need to extract the callbacks out of their components before they can be run. This is because
+/// running callbacks requires mutable access to the [`World`], which we can't do if we are also
+/// trying to mutate the [`On`]'s inner callback state via `run` at the same time.
 #[derive(Resource)]
 pub struct EventDispatcher<E: EntityEvent> {
     /// All the events of type `E` that were emitted this frame, and encountered an [`On<E>`] while
@@ -101,7 +101,7 @@ impl<E: EntityEvent> EventDispatcher<E> {
                 {
                     world.resource_mut::<ListenerInput<E>>().listener = listener;
                     callback.run(world);
-                    if !can_bubble || world.resource::<ListenerInput<E>>().propagate == false {
+                    if !can_bubble || !world.resource::<ListenerInput<E>>().propagate {
                         break;
                     }
                     match next_node {
