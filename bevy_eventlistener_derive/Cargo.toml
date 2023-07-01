@@ -2,6 +2,11 @@
 name = "bevy_eventlistener_derive"
 version = "0.1.0"
 edition = "2021"
+description = "Event listeners and callbacks for bevy"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/aevyrie/bevy_eventlistener"
+keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
+categories = ["game-engines", "rendering"]
 
 [lib]
 proc-macro = true
