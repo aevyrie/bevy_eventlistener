@@ -51,7 +51,14 @@ pub type ListenerMut<'w, E> = ResMut<'w, ListenerInput<E>>;
 /// callback systems.
 ///
 /// ```
+/// # use bevy_eventlistener::callbacks::ListenerMut;
+/// # use bevy_eventlistener_derive::EntityEvent;
+/// # use bevy_eventlistener::event_listener::EntityEvent;
+/// # use bevy::prelude::*;
+/// # #[derive(EntityEvent, Clone)]
 /// # struct MyEvent {
+/// #     #[target]
+/// #     target: Entity,
 /// #     foo: usize,
 /// # }
 /// fn my_callback(mut event: ListenerMut<MyEvent>) {
