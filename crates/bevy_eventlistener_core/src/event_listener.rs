@@ -91,6 +91,47 @@ impl<E: EntityEvent> On<E> {
         )
     }
 
+    /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
+    /// event listener is triggered.
+    pub fn listener_commands_mut(func: fn(&E, &mut EntityCommands)) -> Self {
+        Self::run_callback(
+            move |event: Res<ListenerInput<E>>, mut commands: Commands| {
+                func(&event, &mut commands.entity(event.listener()));
+            },
+        )
+    }
+
+    /// Insert a bundle on the listener entity any time this event listener is triggered.
+    pub fn listener_insert(bundle: impl Bundle + Clone) -> Self {
+        Self::run_callback(
+            move |event: Res<ListenerInput<E>>, mut commands: Commands| {
+                let bundle = bundle.clone();
+                commands.entity(event.listener()).insert(bundle);
+            },
+        )
+    }
+
+    /// Remove a bundle from the listener entity any time this event listener is triggered.
+    pub fn listener_remove<B: Bundle>() -> Self {
+        Self::run_callback(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+            commands.entity(event.listener()).remove::<B>();
+        })
+    }
+
+    /// Get mutable access to a specific component on the listener entity using a closure any time
+    /// this event listener is triggered. If the component does not exist, an error will be logged.
+    pub fn listener_component_mut<C: Component>(func: fn(&E, &mut C)) -> Self {
+        Self::run_callback(
+            move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
+                if let Ok(mut component) = query.get_mut(event.listener()) {
+                    func(&event, &mut component);
+                } else {
+                    error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.listener(), std::any::type_name::<E>());
+                }
+            },
+        )
+    }
+
     /// Send an event `F`  any time this event listener is triggered.
     pub fn send_event<F: Event + From<ListenerInput<E>>>() -> Self {
         Self::run_callback(
