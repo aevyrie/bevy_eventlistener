@@ -1,5 +1,5 @@
 [workspace]
-members = ["bevy_eventlistener_derive"]
+members = ["crates/*"]
 resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,9 +15,10 @@ keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false }
+bevy_eventlistener_core = { path = "crates/bevy_eventlistener_core", version = "0.1" }
+bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.1" }
 
 [dev-dependencies]
-bevy_eventlistener_derive = { path = "bevy_eventlistener_derive", version = "0.1" }
+bevy = { version = "0.10", default-features = false }
 rand = "0.8"
 criterion = "0.5"
