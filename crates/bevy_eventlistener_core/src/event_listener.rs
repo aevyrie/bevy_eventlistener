@@ -9,7 +9,8 @@ use bevy::{
 /// An event that targets a specific entity, and should support event listeners and bubbling.
 pub trait EntityEvent: Event + Clone {
     fn target(&self) -> Entity;
-    /// Should events bubble up the entity hierarchy, starting from the target?
+    /// Should events of this type bubble up the entity hierarchy, starting from the target? This is
+    /// enabled by default.
     fn can_bubble(&self) -> bool {
         true
     }
@@ -25,8 +26,12 @@ pub struct On<E: EntityEvent> {
 }
 
 impl<E: EntityEvent> On<E> {
-    /// Run a callback system any time this event listener is triggered.
-    pub fn run_callback<Marker>(callback: impl IntoSystem<(), (), Marker>) -> Self {
+    /// Run a callback system every time this event listener is triggered. This can be a closure or
+    /// a function, as described by bevy's documentation. The only notable difference from Bevy
+    /// systems is that the callback system can access a resource with event data,
+    /// [`ListenerInput`]. You can more easily access this with the system params
+    /// [`Listener`](crate::callbacks::Listener) and [`ListenerMut`](crate::callbacks::ListenerMut).
+    pub fn run<Marker>(callback: impl IntoSystem<(), (), Marker>) -> Self {
         Self {
             phantom: PhantomData,
             callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
@@ -36,14 +41,14 @@ impl<E: EntityEvent> On<E> {
     /// Add a single [`Command`] any time this event listener is triggered. The command must
     /// implement `From<E>`.
     pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>() -> Self {
-        Self::run_callback(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.add(C::from(event.to_owned()));
         })
     }
 
     /// Get mutable access to [`Commands`] any time this event listener is triggered.
     pub fn commands_mut(func: fn(&E, &mut Commands)) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands);
             },
@@ -53,7 +58,7 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn target_commands_mut(func: fn(&E, &mut EntityCommands)) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands.entity(event.target()));
             },
@@ -62,7 +67,7 @@ impl<E: EntityEvent> On<E> {
 
     /// Insert a bundle on the target entity any time this event listener is triggered.
     pub fn target_insert(bundle: impl Bundle + Clone) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
                 commands.entity(event.target()).insert(bundle);
@@ -72,7 +77,7 @@ impl<E: EntityEvent> On<E> {
 
     /// Remove a bundle from the target entity any time this event listener is triggered.
     pub fn target_remove<B: Bundle>() -> Self {
-        Self::run_callback(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.target()).remove::<B>();
         })
     }
@@ -80,7 +85,7 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the target entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn target_component_mut<C: Component>(func: fn(&E, &mut C)) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target()) {
                     func(&event, &mut component);
@@ -94,7 +99,7 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn listener_commands_mut(func: fn(&E, &mut EntityCommands)) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands.entity(event.listener()));
             },
@@ -103,7 +108,7 @@ impl<E: EntityEvent> On<E> {
 
     /// Insert a bundle on the listener entity any time this event listener is triggered.
     pub fn listener_insert(bundle: impl Bundle + Clone) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
                 commands.entity(event.listener()).insert(bundle);
@@ -113,7 +118,7 @@ impl<E: EntityEvent> On<E> {
 
     /// Remove a bundle from the listener entity any time this event listener is triggered.
     pub fn listener_remove<B: Bundle>() -> Self {
-        Self::run_callback(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.listener()).remove::<B>();
         })
     }
@@ -121,7 +126,7 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the listener entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn listener_component_mut<C: Component>(func: fn(&E, &mut C)) -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
                     func(&event, &mut component);
@@ -134,7 +139,7 @@ impl<E: EntityEvent> On<E> {
 
     /// Send an event `F`  any time this event listener is triggered.
     pub fn send_event<F: Event + From<ListenerInput<E>>>() -> Self {
-        Self::run_callback(
+        Self::run(
             move |event: Res<ListenerInput<E>>, mut ev: EventWriter<F>| {
                 ev.send(F::from(event.to_owned()));
             },

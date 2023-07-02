@@ -43,23 +43,23 @@ fn setup(mut commands: Commands) {
         .spawn((
             Name::new("Goblin"),
             HitPoints(50),
-            On::<Attack>::run_callback(take_damage),
+            On::<Attack>::run(take_damage),
         ))
         .with_children(|parent| {
             parent.spawn((
                 Name::new("Helmet"),
                 Armor(5),
-                On::<Attack>::run_callback(block_attack),
+                On::<Attack>::run(block_attack),
             ));
             parent.spawn((
                 Name::new("Socks"),
                 Armor(10),
-                On::<Attack>::run_callback(block_attack),
+                On::<Attack>::run(block_attack),
             ));
             parent.spawn((
                 Name::new("Shirt"),
                 Armor(15),
-                On::<Attack>::run_callback(block_attack),
+                On::<Attack>::run(block_attack),
             ));
         });
 }

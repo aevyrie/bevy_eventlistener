@@ -6,7 +6,7 @@ resolver = "2"
 
 [package]
 name = "bevy_eventlistener"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "Event listeners and callbacks for bevy"
 license = "MIT OR Apache-2.0"
@@ -15,8 +15,8 @@ keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy_eventlistener_core = { path = "crates/bevy_eventlistener_core", version = "0.1.1" }
-bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.1.1" }
+bevy_eventlistener_core = { path = "crates/bevy_eventlistener_core", version = "0.2" }
+bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.2" }
 
 [dev-dependencies]
 bevy = { version = "0.10", default-features = false }

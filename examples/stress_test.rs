@@ -54,7 +54,7 @@ fn send_events<const N: usize>(
 }
 
 fn setup<const N: usize>(mut commands: Commands) {
-    let event_listener = || On::<TestEvent<N>>::run_callback(|| {});
+    let event_listener = || On::<TestEvent<N>>::run(|| {});
     for _ in 0..ENTITY_WIDTH {
         let mut parent = commands.spawn(event_listener()).id();
         for i in 1..=ENTITY_DEPTH {
