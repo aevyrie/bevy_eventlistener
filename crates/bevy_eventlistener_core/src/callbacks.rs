@@ -32,6 +32,7 @@ impl CallbackSystem {
         }
     }
 }
+
 /// A [`SystemParam`](bevy::ecs::system::SystemParam) used to get immutable access the the
 /// [`ListenerInput`] for this callback.
 ///
@@ -44,7 +45,7 @@ pub type Listener<'w, E> = Res<'w, ListenerInput<E>>;
 /// Use this in callback systems to access event data for the event that triggered the callback.
 pub type ListenerMut<'w, E> = ResMut<'w, ListenerInput<E>>;
 
-/// Data from an event that triggered an [`On<Event>`](crate::on_event::On) listener, and is
+/// Data from an event that triggered an [`On<Event>`](crate::event_listener::On) listener, and is
 /// currently bubbling through the entity hierarchy.
 ///
 /// This is accessed as a bevy resource in the callback system. This resource is only available to

@@ -1,4 +1,4 @@
-//! Event listening, bubbling, and callbacks.
+//! Core implementation of event listening, bubbling, and callbacks.
 
 use bevy::prelude::*;
 
