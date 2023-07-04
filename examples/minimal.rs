@@ -14,8 +14,8 @@ fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
         .add_plugin(LogPlugin::default())
+        // Note that this plugin will add the `Attack` event to bevy:
         .add_plugin(EventListenerPlugin::<Attack>::default())
-        .add_event::<Attack>()
         .add_startup_system(setup)
         .add_system(attack_armor.run_if(on_timer(Duration::from_millis(200))))
         .run();
