@@ -28,7 +28,6 @@ fn main() {
         .add_plugin(StressTestPlugin::<4>)
         // add an event that has no listeners in the hierarchy
         .add_plugin(EventListenerPlugin::<TestEvent<9>>::default())
-        .add_event::<TestEvent<9>>()
         .add_system(send_events::<9>)
         .run();
 }
@@ -37,7 +36,6 @@ struct StressTestPlugin<const N: usize>;
 impl<const N: usize> Plugin for StressTestPlugin<N> {
     fn build(&self, app: &mut App) {
         app.add_plugin(EventListenerPlugin::<TestEvent<N>>::default())
-            .add_event::<TestEvent<N>>()
             .add_startup_system(setup::<N>)
             .add_system(send_events::<N>);
     }

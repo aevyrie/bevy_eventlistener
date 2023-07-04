@@ -20,7 +20,8 @@ impl<E> Default for EventListenerPlugin<E> {
 
 impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
     fn build(&self, app: &mut App) {
-        app.insert_resource(EventDispatcher::<E>::default())
+        app.add_event::<E>()
+            .insert_resource(EventDispatcher::<E>::default())
             .add_systems(
                 (
                     EventDispatcher::<E>::build.run_if(on_event::<E>()),
