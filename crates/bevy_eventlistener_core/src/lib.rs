@@ -23,6 +23,7 @@ impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
         app.add_event::<E>()
             .insert_resource(EventDispatcher::<E>::default())
             .add_systems(
+                Update,
                 (
                     EventDispatcher::<E>::build.run_if(on_event::<E>()),
                     EventDispatcher::<E>::bubble_events.run_if(on_event::<E>()),

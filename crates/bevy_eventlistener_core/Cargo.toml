@@ -9,4 +9,4 @@ keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy = { version = "0.10", default-features = false }
+bevy = { version = "0.11", default-features = false }

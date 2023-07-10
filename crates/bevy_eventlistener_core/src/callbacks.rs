@@ -28,7 +28,7 @@ impl CallbackSystem {
         }
         if let CallbackSystem::Initialized(system) = self {
             system.run((), world);
-            system.apply_buffers(world);
+            system.apply_deferred(world);
         }
     }
 }
