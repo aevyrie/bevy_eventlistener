@@ -13,16 +13,19 @@ use bevy_eventlistener_derive::EntityEvent;
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
-        .add_plugin(LogPlugin::default())
+        .add_plugins(LogPlugin::default())
         // Note that this plugin will add the `Attack` event to bevy:
-        .add_plugin(EventListenerPlugin::<Attack>::default())
-        .add_startup_system(setup)
-        .add_system(attack_armor.run_if(on_timer(Duration::from_millis(200))))
+        .add_plugins(EventListenerPlugin::<Attack>::default())
+        .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            attack_armor.run_if(on_timer(Duration::from_millis(200))),
+        )
         .run();
 }
 
 /// An event used with event listeners must implement `EntityEvent` and `Clone`.
-#[derive(Clone, EntityEvent)]
+#[derive(Clone, Event, EntityEvent)]
 struct Attack {
     #[target] // Marks the field of the event that specifies the target entity
     target: Entity,

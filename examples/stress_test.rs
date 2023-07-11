@@ -12,7 +12,7 @@ const ENTITY_DEPTH: usize = 64;
 const ENTITY_WIDTH: usize = 200;
 const N_EVENTS: usize = 500;
 
-#[derive(Clone, EntityEvent)]
+#[derive(Clone, Event, EntityEvent)]
 struct TestEvent<const N: usize> {
     #[target]
     target: Entity,
@@ -21,23 +21,23 @@ struct TestEvent<const N: usize> {
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
-        .add_plugin(LogPlugin::default())
-        .add_plugin(StressTestPlugin::<1>)
-        .add_plugin(StressTestPlugin::<2>)
-        .add_plugin(StressTestPlugin::<3>)
-        .add_plugin(StressTestPlugin::<4>)
+        .add_plugins(LogPlugin::default())
+        .add_plugins(StressTestPlugin::<1>)
+        .add_plugins(StressTestPlugin::<2>)
+        .add_plugins(StressTestPlugin::<3>)
+        .add_plugins(StressTestPlugin::<4>)
         // add an event that has no listeners in the hierarchy
-        .add_plugin(EventListenerPlugin::<TestEvent<9>>::default())
-        .add_system(send_events::<9>)
+        .add_plugins(EventListenerPlugin::<TestEvent<9>>::default())
+        .add_systems(Update, send_events::<9>)
         .run();
 }
 
 struct StressTestPlugin<const N: usize>;
 impl<const N: usize> Plugin for StressTestPlugin<N> {
     fn build(&self, app: &mut App) {
-        app.add_plugin(EventListenerPlugin::<TestEvent<N>>::default())
-            .add_startup_system(setup::<N>)
-            .add_system(send_events::<N>);
+        app.add_plugins(EventListenerPlugin::<TestEvent<N>>::default())
+            .add_systems(Startup, setup::<N>)
+            .add_systems(Update, send_events::<N>);
     }
 }
 
