@@ -20,18 +20,18 @@ commands
     .spawn((
         Name::new("Goblin"),
         HitPoints(50),
-        On::<Attack>::run_callback(take_damage),
+        On::<Attack>::run(take_damage),
     ))
     .with_children(|parent| {
         parent.spawn((
             Name::new("Helmet"),
             Armor(5),
-            On::<Attack>::run_callback(block_attack),
+            On::<Attack>::run(block_attack),
         ));
         parent.spawn((
             Name::new("Socks"),
             Armor(10),
-            On::<Attack>::run_callback(block_attack),
+            On::<Attack>::run(block_attack),
         ));
     });
 ```
@@ -57,7 +57,7 @@ Using DOM data from the most complex websites I could find, the stress test exam
 
 The blue line can be read as "how long does it take all of these events to bubble up a hierarchy and trigger callbacks at ~20% of the 64 nodes as it traverses depth?". A graph is built for every event as an acceleration structure, which allows us to have linearly scaling performance.
 
-The runtime cost of each event decreases as the total numbe of events increase, this is because graph construction is a fixed cost for each type of event. Adding more events simply amortizes that cost across more events. At 50 events the runtime cost is only ~500ns/event, and about 25us total. To reiterate, this is using an entity hierarchy similar to the most complex websites I could find.
+The runtime cost of each event decreases as the total number of events increase, this is because graph construction is a fixed cost for each type of event. Adding more events simply amortizes that cost across more events. At 50 events the runtime cost is only ~500ns/event, and about 25us total. To reiterate, this is using an entity hierarchy similar to the most complex websites I could find.
 
 # License
 
