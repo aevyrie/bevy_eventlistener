@@ -47,7 +47,9 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Get mutable access to [`Commands`] any time this event listener is triggered.
-    pub fn commands_mut(func: fn(&ListenerInput<E>, &mut Commands)) -> Self {
+    pub fn commands_mut(
+        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut Commands),
+    ) -> Self {
         Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands);
@@ -57,7 +59,9 @@ impl<E: EntityEvent> On<E> {
 
     /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
-    pub fn target_commands_mut(func: fn(&ListenerInput<E>, &mut EntityCommands)) -> Self {
+    pub fn target_commands_mut(
+        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut EntityCommands),
+    ) -> Self {
         Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands.entity(event.target()));
@@ -84,7 +88,9 @@ impl<E: EntityEvent> On<E> {
 
     /// Get mutable access to a specific component on the target entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
-    pub fn target_component_mut<C: Component>(func: fn(&ListenerInput<E>, &mut C)) -> Self {
+    pub fn target_component_mut<C: Component>(
+        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut C),
+    ) -> Self {
         Self::run(
             move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target()) {
@@ -98,7 +104,9 @@ impl<E: EntityEvent> On<E> {
 
     /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
-    pub fn listener_commands_mut(func: fn(&ListenerInput<E>, &mut EntityCommands)) -> Self {
+    pub fn listener_commands_mut(
+        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut EntityCommands),
+    ) -> Self {
         Self::run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 func(&event, &mut commands.entity(event.listener()));
@@ -125,7 +133,9 @@ impl<E: EntityEvent> On<E> {
 
     /// Get mutable access to a specific component on the listener entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
-    pub fn listener_component_mut<C: Component>(func: fn(&ListenerInput<E>, &mut C)) -> Self {
+    pub fn listener_component_mut<C: Component>(
+        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut C),
+    ) -> Self {
         Self::run(
             move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
