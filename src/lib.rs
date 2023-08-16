@@ -22,7 +22,8 @@
 //!
 //! ```
 //! # use bevy::prelude::*;
-//! # use bevy_eventlistener::prelude::*;
+//! use bevy_eventlistener::prelude::*;
+//!
 //! # #[derive(Clone, Event, EntityEvent)]
 //! # struct Attack {
 //! #     #[target]

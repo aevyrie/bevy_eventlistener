@@ -1,6 +1,17 @@
+<div align="center">
+
 # Event listeners, bubbling, and callbacks for Bevy
 
+[![CI](https://github.com/aevyrie/bevy_eventlistener/workflows/CI/badge.svg?branch=main)](https://github.com/aevyrie/bevy_eventlistener/actions?query=workflow%3A%22CI%22+branch%3Amain)
+[![crates.io](https://img.shields.io/crates/v/bevy_eventlistener)](https://crates.io/crates/bevy_eventlistener)
+[![docs.rs](https://docs.rs/bevy_eventlistener/badge.svg)](https://docs.rs/bevy_eventlistener)
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-main-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
+
 An implementation of event listeners and callbacks, allowing you to define behavior with components.
+
+</div>
+
+## Overview
 
 - Define custom events that can target entities.
 - Add event listener components that run callbacks when the specified event reaches that entity.
