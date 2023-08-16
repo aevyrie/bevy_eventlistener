@@ -46,6 +46,13 @@ fn setup(mut commands: Commands) {
         .spawn((
             Name::new("Goblin"),
             HitPoints(50),
+            // This is the party trick of this crate. You can add behavior to entities via a normal
+            // component. The API was designed to be read naturally:
+            //
+            // "When this entity is targeted with an Attack, run the take_damage system."
+            //
+            // The crate also provides a bunch of other helper methods; see the event_listeners
+            // example or the `On` docs for more details.
             On::<Attack>::run(take_damage),
         ))
         .with_children(|parent| {

@@ -18,6 +18,11 @@ pub trait EntityEvent: Event + Clone {
 
 /// An event listener with a callback that is triggered when an [`EntityEvent`] bubbles past or
 /// targets this entity.
+///
+/// The building block for all event listeners is the [`On::run`] method. All the other provided
+/// methods are convenience methods that describe the most common functionality. However, because
+/// these all use the public [`On::run`] method internally, you can easily define your own variants
+/// that have the behavior you want!
 #[derive(Component, Default)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
@@ -96,7 +101,12 @@ impl<E: EntityEvent> On<E> {
                 if let Ok(mut component) = query.get_mut(event.target()) {
                     func(&event, &mut component);
                 } else {
-                    error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.target(), std::any::type_name::<E>());
+                    error!(
+                        "Component {:?} not found on entity {:?} during callback for event {:?}",
+                        std::any::type_name::<C>(),
+                        event.target(),
+                        std::any::type_name::<E>()
+                    );
                 }
             },
         )
@@ -141,7 +151,12 @@ impl<E: EntityEvent> On<E> {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
                     func(&event, &mut component);
                 } else {
-                    error!("Component {:?} not found on entity {:?} during pointer callback for event {:?}", std::any::type_name::<C>(), event.listener(), std::any::type_name::<E>());
+                    error!(
+                        "Component {:?} not found on entity {:?} during callback for event {:?}",
+                        std::any::type_name::<C>(),
+                        event.listener(),
+                        std::any::type_name::<E>()
+                    );
                 }
             },
         )
