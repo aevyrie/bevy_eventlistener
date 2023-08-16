@@ -145,6 +145,7 @@ fn some_complex_system(mut events: EventReader<DoSomethingComplex>) {
 // This section needed for the example, but not important for learning
 
 /// Trigger events with your keyboard
+#[allow(clippy::too_many_arguments)]
 fn keyboard_events(
     target: Res<TargetEntity>,
     mut inputs: EventReader<KeyboardInput>,
