@@ -38,7 +38,7 @@ impl<E: EntityEvent> EventDispatcher<E> {
     /// For each event, we need to build a chain of event listeners in the entity tree starting at
     /// the event's target. This does not need a node for every entity in the tree, instead, only
     /// the entities with event listeners are included.
-    pub(crate) fn build(
+    pub fn build(
         mut events: EventReader<E>,
         mut listeners: Query<(Option<&mut On<E>>, Option<&Parent>)>,
         mut dispatcher: ResMut<EventDispatcher<E>>,
@@ -73,10 +73,7 @@ impl<E: EntityEvent> EventDispatcher<E> {
 
     /// Once we are done bubbling, we need to add the callback systems back into the components we
     /// moved them from when building the tree.
-    pub(crate) fn cleanup(
-        mut listeners: Query<&mut On<E>>,
-        mut callbacks: ResMut<EventDispatcher<E>>,
-    ) {
+    pub fn cleanup(mut listeners: Query<&mut On<E>>, mut callbacks: ResMut<EventDispatcher<E>>) {
         for (entity, (callback, _)) in callbacks.listener_graph.drain() {
             if let Ok(mut listener) = listeners.get_mut(entity) {
                 listener.callback = callback;
