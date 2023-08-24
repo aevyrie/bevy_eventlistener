@@ -1,3 +1,7 @@
+# 0.4.1
+
+- Added: public `EventListenerSet` set label added, and all plugin systems added to the set.
+
 # 0.4.0
 
 - Changed: the plugin now runs in the `PreUpdate` schedule, instead of the `Update` schedule.

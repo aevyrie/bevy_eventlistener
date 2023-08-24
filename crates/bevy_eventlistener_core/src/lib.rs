@@ -9,6 +9,9 @@ pub mod callbacks;
 pub mod event_dispatcher;
 pub mod event_listener;
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub struct EventListenerSet;
+
 /// Adds event listening and bubbling support for event `E`.
 pub struct EventListenerPlugin<E>(std::marker::PhantomData<E>);
 
@@ -29,7 +32,8 @@ impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
                     EventDispatcher::<E>::bubble_events.run_if(on_event::<E>()),
                     EventDispatcher::<E>::cleanup.run_if(on_event::<E>()),
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(EventListenerSet),
             );
     }
 }
