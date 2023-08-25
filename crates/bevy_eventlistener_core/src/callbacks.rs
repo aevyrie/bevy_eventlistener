@@ -1,8 +1,6 @@
-use bevy::{ecs::system::BoxedSystem, prelude::*};
+use bevy_ecs::{prelude::*, system::BoxedSystem};
 
 use crate::EntityEvent;
-
-pub trait CallbackSystemTrait: System<In = (), Out = ()> + Reflect {}
 
 #[derive(Default, Debug)]
 pub enum CallbackSystem {
@@ -52,15 +50,17 @@ pub type ListenerMut<'w, E> = ResMut<'w, ListenerInput<E>>;
 /// callback systems.
 ///
 /// ```
-/// # use bevy_eventlistener::callbacks::ListenerMut;
-/// # use bevy_eventlistener_derive::EntityEvent;
-/// # use bevy_eventlistener::event_listener::EntityEvent;
-/// # use bevy::prelude::*;
-/// # #[derive(EntityEvent, Clone)]
+/// # use bevy_eventlistener_core::{callbacks::ListenerMut, event_listener::EntityEvent};
+/// # use bevy_ecs::prelude::*;
+/// # #[derive(Clone, Event)]
 /// # struct MyEvent {
-/// #     #[target]
 /// #     target: Entity,
 /// #     foo: usize,
+/// # }
+/// # impl EntityEvent for MyEvent {
+/// #     fn target(&self) -> Entity {
+/// #         self.target
+/// #     }
 /// # }
 /// fn my_callback(mut event: ListenerMut<MyEvent>) {
 ///     event.foo += 1; // Mutate the event that is being bubbled

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_eventlistener_core"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 description = "Event listeners and callbacks for bevy"
 license = "MIT OR Apache-2.0"
@@ -9,4 +9,11 @@ keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy = { version = "0.11", default-features = false }
+bevy_ecs = "0.11"
+bevy_app = "0.11"
+bevy_utils = "0.11"
+bevy_hierarchy = "0.11"
+
+[features]
+default = ["trace"]
+trace = []

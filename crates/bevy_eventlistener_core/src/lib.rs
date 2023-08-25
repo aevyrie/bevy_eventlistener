@@ -1,6 +1,7 @@
 //! Core implementation of event listening, bubbling, and callbacks.
 
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
 
 use event_dispatcher::EventDispatcher;
 use event_listener::EntityEvent;

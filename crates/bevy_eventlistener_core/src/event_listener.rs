@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
-use bevy::{
-    ecs::system::{Command, EntityCommands},
+use bevy_ecs::{
     prelude::*,
+    system::{Command, EntityCommands},
 };
+#[cfg(feature = "trace")]
+use bevy_utils::tracing::error;
 
 /// An event that targets a specific entity, and should support event listeners and bubbling.
 pub trait EntityEvent: Event + Clone {
@@ -101,6 +103,7 @@ impl<E: EntityEvent> On<E> {
                 if let Ok(mut component) = query.get_mut(event.target()) {
                     func(&event, &mut component);
                 } else {
+                    #[cfg(feature = "trace")]
                     error!(
                         "Component {:?} not found on entity {:?} during callback for event {:?}",
                         std::any::type_name::<C>(),
@@ -151,6 +154,7 @@ impl<E: EntityEvent> On<E> {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
                     func(&event, &mut component);
                 } else {
+                    #[cfg(feature = "trace")]
                     error!(
                         "Component {:?} not found on entity {:?} during callback for event {:?}",
                         std::any::type_name::<C>(),

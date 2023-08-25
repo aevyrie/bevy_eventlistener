@@ -1,3 +1,8 @@
+# 0.5.0
+
+- Removed: public dead code trait CallbackSystemTrait has been removed.
+- Removed: many dependencies have been removed by relying on bevy sub-crates.
+
 # 0.4.1
 
 - Added: public `EventListenerSet` set label added, and all plugin systems added to the set.

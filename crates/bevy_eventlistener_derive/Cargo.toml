@@ -1,6 +1,6 @@
 [package]
 name = "bevy_eventlistener_derive"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 description = "Event listeners and callbacks for bevy"
 license = "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@ categories = ["game-engines", "rendering"]
 proc-macro = true
 
 [dependencies]
-bevy_eventlistener_core = { path = "../bevy_eventlistener_core", version = "0.4.1" }
+bevy_eventlistener_core = { path = "../bevy_eventlistener_core", version = "0.5.0" }
 quote = "1"
 syn = "2"
 proc-macro2 = "1"
