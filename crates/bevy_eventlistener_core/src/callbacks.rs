@@ -16,18 +16,17 @@ impl CallbackSystem {
     }
 
     pub(crate) fn run(&mut self, world: &mut World) {
-        if !self.is_initialized() {
-            let mut temp = CallbackSystem::Empty;
-            std::mem::swap(self, &mut temp);
-            if let CallbackSystem::New(mut system) = temp {
+        let mut system = match std::mem::take(self) {
+            CallbackSystem::Empty => {return}
+            CallbackSystem::New(mut system) => {
                 system.initialize(world);
-                *self = CallbackSystem::Initialized(system);
+                system
             }
-        }
-        if let CallbackSystem::Initialized(system) = self {
-            system.run((), world);
-            system.apply_deferred(world);
-        }
+            CallbackSystem::Initialized(system) => system
+        };
+        system.run((), world);
+        system.apply_deferred(world);
+        *self = CallbackSystem::Initialized(system);
     }
 }
 
