@@ -1,4 +1,7 @@
-use std::marker::PhantomData;
+use std::{
+    marker::PhantomData,
+    sync::{Arc, Mutex},
+};
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
 use bevy_ecs::{
@@ -25,7 +28,7 @@ pub trait EntityEvent: Event + Clone {
 /// methods are convenience methods that describe the most common functionality. However, because
 /// these all use the public [`On::run`] method internally, you can easily define your own variants
 /// that have the behavior you want!
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
     /// A function that is called when the event listener is triggered.
@@ -41,7 +44,9 @@ impl<E: EntityEvent> On<E> {
     pub fn run<Marker>(callback: impl IntoSystem<(), (), Marker>) -> Self {
         Self {
             phantom: PhantomData,
-            callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
+            callback: CallbackSystem::New(Arc::new(Mutex::new(Box::new(IntoSystem::into_system(
+                callback,
+            ))))),
         }
     }
 

@@ -1,13 +1,15 @@
+use std::sync::{Arc, Mutex};
+
 use bevy_ecs::{prelude::*, system::BoxedSystem};
 
 use crate::EntityEvent;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub enum CallbackSystem {
     #[default]
     Empty,
-    New(BoxedSystem),
-    Initialized(BoxedSystem),
+    New(Arc<Mutex<BoxedSystem>>),
+    Initialized(Arc<Mutex<BoxedSystem>>),
 }
 
 impl CallbackSystem {
@@ -19,14 +21,14 @@ impl CallbackSystem {
         if !self.is_initialized() {
             let mut temp = CallbackSystem::Empty;
             std::mem::swap(self, &mut temp);
-            if let CallbackSystem::New(mut system) = temp {
-                system.initialize(world);
+            if let CallbackSystem::New(system) = temp {
+                system.lock().unwrap().initialize(world);
                 *self = CallbackSystem::Initialized(system);
             }
         }
         if let CallbackSystem::Initialized(system) = self {
-            system.run((), world);
-            system.apply_deferred(world);
+            system.lock().unwrap().run((), world);
+            system.lock().unwrap().apply_deferred(world);
         }
     }
 }
