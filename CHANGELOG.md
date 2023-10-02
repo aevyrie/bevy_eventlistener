@@ -1,4 +1,4 @@
-# 0.6.0
+# Unreleased
 
 - Modified: `CallbackSystem` now uses `Arc<Mutex<BoxedSystem>>` to facilitate cloning.
 
