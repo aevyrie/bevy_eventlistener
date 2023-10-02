@@ -1,3 +1,7 @@
+# 0.6.0
+
+- Modified: `CallbackSystem` now uses `Arc<Mutex<BoxedSystem>>` to facilitate cloning.
+
 # 0.5.0
 
 - Removed: public dead code trait CallbackSystemTrait has been removed.
