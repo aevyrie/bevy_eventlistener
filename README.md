@@ -70,6 +70,13 @@ The blue line can be read as "how long does it take all of these events to bubbl
 
 The runtime cost of each event decreases as the total number of events increase, this is because graph construction is a fixed cost for each type of event. Adding more events simply amortizes that cost across more events. At 50 events the runtime cost is only ~500ns/event, and about 25us total. To reiterate, this is using an entity hierarchy similar to the most complex websites I could find.
 
+# Bevy version support
+
+|bevy|bevy\_eventlistener|
+|----|---|
+|0.12|0.6|
+|0.11|0.5|
+
 # License
 
 All code in this repository is dual-licensed under either:
@@ -83,4 +90,3 @@ at your option. This means you can select the license you prefer.
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the
 work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any
 additional terms or conditions.
-
