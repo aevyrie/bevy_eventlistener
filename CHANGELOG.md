@@ -1,3 +1,9 @@
+# 0.5.1
+
+- Changed: reduced overhead of callback `run` function
+- Fixed: Does not compile if bevy_reflect's "documentation" feature is enabled after updating to
+  0.5. This fixed by removing the dependency of the derive crate on the core crate.
+
 # 0.5.0
 
 - Removed: public dead code trait CallbackSystemTrait has been removed.
@@ -16,5 +22,6 @@
 # 0.3.0
 
 - Changed: relaxed bounds to support static `FnMut` closures for `On` methods instead of only `fn`
-- Added: new `event_listener` example to guide users through how to use the supplied event listener methods.
+- Added: new `event_listener` example to guide users through how to use the supplied event listener
+  methods.
 - Fixed: prelude now exports `ListenerInput`
