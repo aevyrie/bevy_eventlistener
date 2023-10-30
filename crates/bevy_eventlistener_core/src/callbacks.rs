@@ -11,18 +11,14 @@ pub enum CallbackSystem {
 }
 
 impl CallbackSystem {
-    pub(crate) fn is_initialized(&self) -> bool {
-        matches!(self, CallbackSystem::Initialized(_))
-    }
-
     pub(crate) fn run(&mut self, world: &mut World) {
         let mut system = match std::mem::take(self) {
-            CallbackSystem::Empty => {return}
+            CallbackSystem::Empty => return,
             CallbackSystem::New(mut system) => {
                 system.initialize(world);
                 system
             }
-            CallbackSystem::Initialized(system) => system
+            CallbackSystem::Initialized(system) => system,
         };
         system.run((), world);
         system.apply_deferred(world);
