@@ -1,9 +1,11 @@
+#![allow(clippy::type_complexity)]
+
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_eventlistener::prelude::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::{seq::IteratorRandom, Rng};
 
-const LISTENER_DENSITY: f64 = 0.20; // percent of nodes with listeners
+const DENSITY: usize = 20; // percent of nodes with listeners
 const ENTITY_DEPTH: usize = 64;
 const ENTITY_WIDTH: usize = 200;
 const N_EVENTS: usize = 500;
@@ -20,6 +22,7 @@ fn event_listeners(c: &mut Criterion) {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_systems(Startup, spawn_listener_hierarchy);
+        app.update();
 
         b.iter(|| {
             black_box(app.update());
@@ -29,9 +32,16 @@ fn event_listeners(c: &mut Criterion) {
     group.bench_function("Single Event Type", |b| {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
-            .add_systems(Startup, spawn_listener_hierarchy)
+            .add_systems(
+                Startup,
+                (
+                    spawn_listener_hierarchy,
+                    add_listeners_to_hierarchy::<DENSITY, 1>,
+                ),
+            )
             .add_plugins(EventListenerPlugin::<TestEvent<1>>::default())
-            .add_systems(Update, send_events::<1, N_EVENTS>);
+            .add_systems(First, send_events::<1, N_EVENTS>);
+        app.update();
 
         b.iter(|| {
             black_box(app.update());
@@ -41,9 +51,16 @@ fn event_listeners(c: &mut Criterion) {
     group.bench_function("Single Event Type No Listeners", |b| {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
-            .add_systems(Startup, spawn_listener_hierarchy)
+            .add_systems(
+                Startup,
+                (
+                    spawn_listener_hierarchy,
+                    add_listeners_to_hierarchy::<DENSITY, 1>,
+                ),
+            )
             .add_plugins(EventListenerPlugin::<TestEvent<9>>::default())
-            .add_systems(Update, send_events::<9, N_EVENTS>);
+            .add_systems(First, send_events::<9, N_EVENTS>);
+        app.update();
 
         b.iter(|| {
             black_box(app.update());
@@ -52,17 +69,29 @@ fn event_listeners(c: &mut Criterion) {
 
     group.bench_function("Four Event Types", |b| {
         let mut app = App::new();
-        const N_EVENTS_4: usize = N_EVENTS / 4;
+        const FRAC_N_EVENTS_4: usize = N_EVENTS / 4;
+        const FRAC_DENSITY_4: usize = DENSITY / 4;
+
         app.add_plugins(MinimalPlugins)
-            .add_systems(Startup, spawn_listener_hierarchy)
+            .add_systems(
+                Startup,
+                (
+                    spawn_listener_hierarchy,
+                    add_listeners_to_hierarchy::<FRAC_DENSITY_4, 1>,
+                    add_listeners_to_hierarchy::<FRAC_DENSITY_4, 2>,
+                    add_listeners_to_hierarchy::<FRAC_DENSITY_4, 3>,
+                    add_listeners_to_hierarchy::<FRAC_DENSITY_4, 4>,
+                ),
+            )
             .add_plugins(EventListenerPlugin::<TestEvent<1>>::default())
             .add_plugins(EventListenerPlugin::<TestEvent<2>>::default())
             .add_plugins(EventListenerPlugin::<TestEvent<3>>::default())
             .add_plugins(EventListenerPlugin::<TestEvent<4>>::default())
-            .add_systems(Update, send_events::<1, N_EVENTS_4>)
-            .add_systems(Update, send_events::<2, N_EVENTS_4>)
-            .add_systems(Update, send_events::<3, N_EVENTS_4>)
-            .add_systems(Update, send_events::<4, N_EVENTS_4>);
+            .add_systems(First, send_events::<1, FRAC_N_EVENTS_4>)
+            .add_systems(First, send_events::<2, FRAC_N_EVENTS_4>)
+            .add_systems(First, send_events::<3, FRAC_N_EVENTS_4>)
+            .add_systems(First, send_events::<4, FRAC_N_EVENTS_4>);
+        app.update();
 
         b.iter(|| {
             black_box(app.update());
@@ -80,10 +109,20 @@ fn send_events<const N: usize, const N_EVENTS: usize>(
     mut event: EventWriter<TestEvent<N>>,
     entities: Query<Entity, Without<Children>>,
 ) {
-    if let Some(target) = entities.iter().choose(&mut rand::thread_rng()) {
-        (0..N_EVENTS).for_each(|_| {
-            event.send(TestEvent::<N> { target });
-        });
+    let target = entities.iter().choose(&mut rand::thread_rng()).unwrap();
+    (0..N_EVENTS).for_each(|_| {
+        event.send(TestEvent::<N> { target });
+    });
+}
+
+fn spawn_listener_hierarchy(mut commands: Commands) {
+    for _ in 0..ENTITY_WIDTH {
+        let mut parent = commands.spawn_empty().id();
+        for _ in 0..ENTITY_DEPTH {
+            let child = commands.spawn_empty().id();
+            commands.entity(parent).add_child(child);
+            parent = child;
+        }
     }
 }
 
@@ -91,31 +130,21 @@ fn empty_listener<const N: usize>() -> On<TestEvent<N>> {
     On::<TestEvent<N>>::run(|| {})
 }
 
-fn spawn_listener_hierarchy(mut commands: Commands) {
-    for _ in 0..ENTITY_WIDTH {
-        let mut parent = commands
-            .spawn((
-                empty_listener::<1>(),
-                empty_listener::<2>(),
-                empty_listener::<3>(),
-                empty_listener::<4>(),
-            ))
-            .id();
-        for i in 1..=ENTITY_DEPTH {
-            let mut child = commands.spawn_empty();
-            maybe_insert_listener::<1>(i, &mut child);
-            maybe_insert_listener::<2>(i, &mut child);
-            maybe_insert_listener::<3>(i, &mut child);
-            maybe_insert_listener::<4>(i, &mut child);
-            let child = child.id();
-            commands.entity(parent).add_child(child);
-            parent = child;
-        }
+fn add_listeners_to_hierarchy<const DENSITY: usize, const N: usize>(
+    mut commands: Commands,
+    roots_and_leaves: Query<Entity, Or<(Without<Parent>, Without<Children>)>>,
+    nodes: Query<Entity, (With<Parent>, With<Children>)>,
+) {
+    for entity in &roots_and_leaves {
+        commands.entity(entity).insert(empty_listener::<N>());
+    }
+    for entity in &nodes {
+        maybe_insert_listener::<DENSITY, N>(&mut commands.entity(entity));
     }
 }
 
-fn maybe_insert_listener<const N: usize>(i: usize, commands: &mut EntityCommands) {
-    if i == ENTITY_DEPTH || rand::thread_rng().gen_bool(LISTENER_DENSITY) {
+fn maybe_insert_listener<const DENSITY: usize, const N: usize>(commands: &mut EntityCommands) {
+    if rand::thread_rng().gen_bool(DENSITY as f64 / 100.0) {
         commands.insert(empty_listener::<N>());
     }
 }
