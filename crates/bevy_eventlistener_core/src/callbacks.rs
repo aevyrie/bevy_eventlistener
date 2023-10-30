@@ -31,13 +31,13 @@ impl CallbackSystem {
     }
 }
 
-/// A [`SystemParam`](bevy::ecs::system::SystemParam) used to get immutable access the the
+/// A [`SystemParam`](bevy_ecs::system::SystemParam) used to get immutable access the the
 /// [`ListenerInput`] for this callback.
 ///
 /// Use this in callback systems to access event data for the event that triggered the callback.
 pub type Listener<'w, E> = Res<'w, ListenerInput<E>>;
 
-/// A [`SystemParam`](bevy::ecs::system::SystemParam) used to get mutable access the the
+/// A [`SystemParam`](bevy_ecs::system::SystemParam) used to get mutable access the the
 /// [`ListenerInput`] for this callback.
 ///
 /// Use this in callback systems to access event data for the event that triggered the callback.
