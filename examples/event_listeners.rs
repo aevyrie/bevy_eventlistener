@@ -70,7 +70,7 @@ fn setup(mut commands: Commands, mut target_entity: ResMut<TargetEntity>) {
                         captured_data
                     );
                     info!(
-                        "I can also use queries and resources because I am a system. Time: {:?}",
+                        "I can also use queries and resources because I am a system. My name is: {:?}",
                         names.get(event.target)
                     );
                     // If you are working in a hierarchy and want to stop this event from bubbling
