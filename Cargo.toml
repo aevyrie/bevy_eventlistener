@@ -25,3 +25,7 @@ bevy = { version = "0.11", default-features = false, features = [
 ] }
 rand = "0.8"
 criterion = "0.5"
+
+[[bench]]
+name = "benchmarks"
+harness = false
