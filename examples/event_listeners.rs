@@ -137,7 +137,7 @@ impl From<ListenerInput<MyEvent<7>>> for DoSomethingComplex {
 /// Unlike the [`some_simple_system`], this one can run in parallel with other systems because it is
 /// scheduled.
 fn some_complex_system(mut events: EventReader<DoSomethingComplex>) {
-    for event in events.iter() {
+    for event in events.read() {
         info!("Doing complex things with data: {}", event.important_data)
     }
 }
@@ -159,7 +159,7 @@ fn keyboard_events(
 ) {
     let target = target.0;
     for input in inputs
-        .iter()
+        .read()
         .filter(|input| !input.state.is_pressed())
         .filter_map(|input| input.key_code)
     {

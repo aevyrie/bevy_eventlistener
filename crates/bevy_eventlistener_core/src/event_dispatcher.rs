@@ -50,7 +50,7 @@ impl<E: EntityEvent> EventDispatcher<E> {
         dead_branch_nodes.clear();
         target_cache.clear();
 
-        for event in events.iter() {
+        for event in events.read() {
             // if the target belongs to a dead branch, exit early.
             if dead_branch_nodes.contains(&event.target()) {
                 continue;
