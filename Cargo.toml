@@ -16,7 +16,7 @@ categories = ["game-engines", "rendering"]
 
 [dependencies]
 bevy_eventlistener_core = { path = "crates/bevy_eventlistener_core", version = "0.6.0" }
-bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.5.1" }
+bevy_eventlistener_derive = { path = "crates/bevy_eventlistener_derive", version = "0.6.0" }
 
 [dev-dependencies]
 bevy = { version = "0.12", default-features = false, features = [
