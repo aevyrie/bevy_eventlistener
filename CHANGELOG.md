@@ -1,3 +1,7 @@
+# 0.6.0
+
+- Changed: updated to bevy 0.12
+
 # 0.5.1
 
 - Changed: reduced overhead of callback `run` function
