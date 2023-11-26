@@ -29,11 +29,12 @@ impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
             .add_systems(
                 PreUpdate,
                 (
-                    EventDispatcher::<E>::build.run_if(on_event::<E>()),
-                    EventDispatcher::<E>::bubble_events.run_if(on_event::<E>()),
-                    EventDispatcher::<E>::cleanup.run_if(on_event::<E>()),
+                    EventDispatcher::<E>::build,
+                    EventDispatcher::<E>::bubble_events,
+                    EventDispatcher::<E>::cleanup,
                 )
                     .chain()
+                    .run_if(on_event::<E>())
                     .in_set(EventListenerSet),
             );
     }
