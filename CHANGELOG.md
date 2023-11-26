@@ -1,3 +1,7 @@
+# 0.6.1
+
+- Fixed: event listeners adding extra delay when processing events.
+
 # 0.6.0
 
 - Changed: updated to bevy 0.12
