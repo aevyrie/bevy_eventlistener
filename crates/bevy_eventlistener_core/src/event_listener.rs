@@ -55,11 +55,11 @@ impl<E: EntityEvent> On<E> {
 
     /// Get mutable access to [`Commands`] any time this event listener is triggered.
     pub fn commands_mut(
-        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut Commands),
+        mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut Commands),
     ) -> Self {
         Self::run(
-            move |event: Res<ListenerInput<E>>, mut commands: Commands| {
-                func(&event, &mut commands);
+            move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
+                func(&mut event, &mut commands);
             },
         )
     }
@@ -67,11 +67,12 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn target_commands_mut(
-        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut EntityCommands),
+        mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
     ) -> Self {
         Self::run(
-            move |event: Res<ListenerInput<E>>, mut commands: Commands| {
-                func(&event, &mut commands.entity(event.target()));
+            move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
+                let target = event.target();
+                func(&mut event, &mut commands.entity(target));
             },
         )
     }
@@ -96,12 +97,12 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the target entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn target_component_mut<C: Component>(
-        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut C),
+        mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
     ) -> Self {
         Self::run(
-            move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
+            move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target()) {
-                    func(&event, &mut component);
+                    func(&mut event, &mut component);
                 } else {
                     #[cfg(feature = "trace")]
                     error!(
@@ -118,11 +119,12 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn listener_commands_mut(
-        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut EntityCommands),
+        mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
     ) -> Self {
         Self::run(
-            move |event: Res<ListenerInput<E>>, mut commands: Commands| {
-                func(&event, &mut commands.entity(event.listener()));
+            move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
+                let listener = event.listener();
+                func(&mut event, &mut commands.entity(listener));
             },
         )
     }
@@ -147,12 +149,12 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the listener entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn listener_component_mut<C: Component>(
-        mut func: impl 'static + Send + Sync + FnMut(&ListenerInput<E>, &mut C),
+        mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
     ) -> Self {
         Self::run(
-            move |event: Res<ListenerInput<E>>, mut query: Query<&mut C>| {
+            move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
-                    func(&event, &mut component);
+                    func(&mut event, &mut component);
                 } else {
                     #[cfg(feature = "trace")]
                     error!(

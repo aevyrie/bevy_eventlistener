@@ -1,3 +1,10 @@
+# UNRELEASED
+
+- Changed: `commands_mut`, `target_commands_mut`, `target_component_mut`, `listener_commands_mut`,
+  and `listener_component_mut` have been changed to provide a mutable reference to
+  `ListenerInput<E>`. This now makes it possible to call `stop_propagation()` from these functions.
+  Fixes: https://github.com/aevyrie/bevy_eventlistener/issues/15.
+
 # 0.6.2
 
 - Fixed: `On<E>` event listeners that mutate themselves inside a callback were being overwritten

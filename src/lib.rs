@@ -151,7 +151,7 @@ fn replace_listener_in_callback() {
         .update();
 
     let callback = On::<Foo>::listener_commands_mut(
-        move |_: &ListenerInput<Foo>, commands: &mut EntityCommands| {
+        move |_: &mut ListenerInput<Foo>, commands: &mut EntityCommands| {
             sender.send("one").unwrap();
             let sender2 = sender.clone();
             commands.insert(On::<Foo>::run(move || sender2.send("two").unwrap()));
