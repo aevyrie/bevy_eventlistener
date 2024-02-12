@@ -75,7 +75,10 @@ impl<E: EntityEvent> EventDispatcher<E> {
     pub fn cleanup(mut listeners: Query<&mut On<E>>, mut callbacks: ResMut<EventDispatcher<E>>) {
         for (entity, (callback, _)) in callbacks.listener_graph.drain() {
             if let Ok(mut listener) = listeners.get_mut(entity) {
-                listener.callback = callback;
+                // Do not restore the callback if it has been replaced by the event handler.
+                if listener.callback.is_empty() {
+                    listener.callback = callback;
+                }
             }
         }
     }
