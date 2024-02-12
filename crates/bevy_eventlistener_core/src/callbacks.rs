@@ -24,6 +24,10 @@ impl CallbackSystem {
         system.apply_deferred(world);
         *self = CallbackSystem::Initialized(system);
     }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        matches!(self, CallbackSystem::Empty)
+    }
 }
 
 /// A [`SystemParam`](bevy_ecs::system::SystemParam) used to get immutable access the the

@@ -1,3 +1,8 @@
+# 0.6.2
+
+- Fixed: `On<E>` event listeners that mutate themselves inside a callback were being overwritten
+  during cleanup.
+
 # 0.6.1
 
 - Fixed: event listeners adding extra delay when processing events.

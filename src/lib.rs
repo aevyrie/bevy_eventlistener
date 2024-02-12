@@ -92,3 +92,75 @@ pub mod prelude {
     };
     pub use bevy_eventlistener_derive::EntityEvent;
 }
+
+#[test]
+fn replace_listener() {
+    use crate::prelude::*;
+    use bevy::prelude::*;
+
+    #[derive(Clone, Event, EntityEvent)]
+    struct Foo {
+        #[target]
+        target: Entity,
+    }
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    let mut app = App::new();
+    let entity = app.world.spawn_empty().id();
+    app.add_plugins(MinimalPlugins)
+        .add_plugins(EventListenerPlugin::<Foo>::default())
+        .add_systems(Update, move |mut event: EventWriter<Foo>| {
+            event.send(Foo { target: entity })
+        })
+        .update();
+
+    let sender = tx.clone();
+    let callback = On::<Foo>::run(move || sender.send("one").unwrap());
+    app.world.entity_mut(entity).insert(callback);
+    app.update();
+
+    let sender = tx.clone();
+    let callback = On::<Foo>::run(move || sender.send("two").unwrap());
+    app.world.entity_mut(entity).insert(callback);
+    app.update();
+
+    assert_eq!(rx.recv(), Ok("one"));
+    assert_eq!(rx.recv(), Ok("two"));
+}
+
+#[test]
+fn replace_listener_in_callback() {
+    use crate::prelude::*;
+    use bevy::ecs::system::EntityCommands;
+    use bevy::prelude::*;
+
+    #[derive(Clone, Event, EntityEvent)]
+    struct Foo {
+        #[target]
+        target: Entity,
+    }
+
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let mut app = App::new();
+    let entity = app.world.spawn_empty().id();
+    app.add_plugins(MinimalPlugins)
+        .add_plugins(EventListenerPlugin::<Foo>::default())
+        .add_systems(Update, move |mut event: EventWriter<Foo>| {
+            event.send(Foo { target: entity })
+        })
+        .update();
+
+    let callback = On::<Foo>::listener_commands_mut(
+        move |_: &ListenerInput<Foo>, commands: &mut EntityCommands| {
+            sender.send("one").unwrap();
+            let sender2 = sender.clone();
+            commands.insert(On::<Foo>::run(move || sender2.send("two").unwrap()));
+        },
+    );
+    app.world.entity_mut(entity).insert(callback);
+    app.update();
+    app.update();
+
+    assert_eq!(receiver.recv(), Ok("one"));
+    assert_eq!(receiver.recv(), Ok("two"));
+}
