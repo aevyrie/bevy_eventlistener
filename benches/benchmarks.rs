@@ -100,6 +100,7 @@ fn event_listeners(c: &mut Criterion) {
 }
 
 #[derive(Clone, Event, EntityEvent)]
+#[can_bubble]
 struct TestEvent<const N: usize> {
     #[target]
     target: Entity,

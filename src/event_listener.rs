@@ -1,3 +1,6 @@
+//! This module provides event listeners, [`On`], the most important part of
+//! [`bevy_eventlistener`](crate).
+
 use std::marker::PhantomData;
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
@@ -10,11 +13,12 @@ use bevy_utils::tracing::error;
 
 /// An event that targets a specific entity, and should support event listeners and bubbling.
 pub trait EntityEvent: Event + Clone {
+    /// The entity that was targeted by this event, e.g. the entity that was clicked on.
     fn target(&self) -> Entity;
     /// Should events of this type bubble up the entity hierarchy, starting from the target? This is
     /// enabled by default.
     fn can_bubble(&self) -> bool {
-        true
+        false
     }
 }
 

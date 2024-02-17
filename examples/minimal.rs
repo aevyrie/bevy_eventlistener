@@ -26,6 +26,7 @@ fn main() {
 
 /// An event used with event listeners must implement `EntityEvent` and `Clone`.
 #[derive(Clone, Event, EntityEvent)]
+#[can_bubble] // Enables event bubbling for this event, off by default
 struct Attack {
     #[target] // Marks the field of the event that specifies the target entity
     target: Entity,

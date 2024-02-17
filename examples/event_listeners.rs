@@ -34,6 +34,7 @@ fn some_simple_system(time: Res<Time>) {
 
 /// An event used with event listeners must implement `EntityEvent` and `Clone`.
 #[derive(Clone, Event, EntityEvent)]
+#[can_bubble]
 struct MyEvent<const N: usize> {
     #[target] // Marks the field of the event that specifies the target entity
     target: Entity,

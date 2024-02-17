@@ -1,12 +1,20 @@
+//! Implementation of callbacks as one-shot bevy systems.
+
 use bevy_ecs::{prelude::*, system::BoxedSystem};
 
 use crate::EntityEvent;
 
+/// Holds a system, with its own state, that can be run on command from an event listener
+/// [`crate::prelude::On`].
 #[derive(Default, Debug)]
 pub enum CallbackSystem {
+    /// The system has been removed, because it is currently being executed in the callback graph
+    /// for event bubbling.
     #[default]
     Empty,
+    /// A system that has not yet been initialized.
     New(BoxedSystem),
+    /// A system that is ready to be executed.
     Initialized(BoxedSystem),
 }
 

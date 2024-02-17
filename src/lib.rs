@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 
 //! Event listening, bubbling, and callbacks.
 //!
@@ -80,18 +80,23 @@
 //! total. To reiterate, this is using an entity hierarchy similar to the most complex websites I
 //! could find.
 
-pub use bevy_eventlistener_core::*;
 pub use bevy_eventlistener_derive::EntityEvent;
+pub use plugin::*;
 
 /// Common exports
 pub mod prelude {
-    pub use bevy_eventlistener_core::{
-        callbacks::{Listener, ListenerInput, ListenerMut},
-        event_listener::{EntityEvent, On},
-        EventListenerPlugin,
-    };
+    pub use crate::callbacks::{Listener, ListenerInput, ListenerMut};
+    pub use crate::event_listener::{EntityEvent, On};
+    pub use crate::EventListenerPlugin;
     pub use bevy_eventlistener_derive::EntityEvent;
 }
+
+use event_listener::EntityEvent;
+
+pub mod callbacks;
+pub mod event_dispatcher;
+pub mod event_listener;
+pub mod plugin;
 
 #[test]
 fn replace_listener() {

@@ -1,15 +1,11 @@
-//! Core implementation of event listening, bubbling, and callbacks.
+//! Provides the [`EventListenerPlugin`].
 
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 
-use event_dispatcher::EventDispatcher;
-use event_listener::EntityEvent;
+use crate::{event_dispatcher::EventDispatcher, event_listener::EntityEvent};
 
-pub mod callbacks;
-pub mod event_dispatcher;
-pub mod event_listener;
-
+/// The [`SystemSet`] that event listener plugins are added to.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub struct EventListenerSet;
 

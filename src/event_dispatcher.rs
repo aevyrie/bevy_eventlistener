@@ -1,3 +1,6 @@
+//! Provides the [`EventDispatcher`], which handles bubbling events through the entity hierarchy,
+//! and triggering event listeners.
+
 use bevy_ecs::prelude::*;
 use bevy_hierarchy::Parent;
 use bevy_utils::{HashMap, HashSet};
