@@ -1,5 +1,6 @@
 # UNRELEASED
 
+- Changed: Updated to Bevy `0.13`.
 - Changed: ***BREAKING*** `EntityEvent`s no longer bubble by default.
   - If you are using `#[derive(EntityEvent)]`, you will need to add the `#[can_bubble]` attribute to
     enable bubbling.
