@@ -15,7 +15,7 @@ keywords = ["gamedev", "bevy", "eventlistener", "callbacks"]
 categories = ["game-engines", "rendering"]
 
 [dependencies]
-bevy_eventlistener_derive = { path = "macros", version = "0.6.2" }
+bevy_eventlistener_derive = { path = "macros", version = "0.7.0" }
 bevy_ecs = "0.13"
 bevy_app = "0.13"
 bevy_utils = "0.13"
