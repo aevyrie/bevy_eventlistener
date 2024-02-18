@@ -115,7 +115,7 @@ fn replace_listener() {
     app.add_plugins(MinimalPlugins)
         .add_plugins(EventListenerPlugin::<Foo>::default())
         .add_systems(Update, move |mut event: EventWriter<Foo>| {
-            event.send(Foo { target: entity })
+            event.send(Foo { target: entity });
         })
         .update();
 
@@ -151,7 +151,7 @@ fn replace_listener_in_callback() {
     app.add_plugins(MinimalPlugins)
         .add_plugins(EventListenerPlugin::<Foo>::default())
         .add_systems(Update, move |mut event: EventWriter<Foo>| {
-            event.send(Foo { target: entity })
+            event.send(Foo { target: entity });
         })
         .update();
 

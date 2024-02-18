@@ -162,37 +162,51 @@ fn keyboard_events(
     for input in inputs
         .read()
         .filter(|input| !input.state.is_pressed())
-        .filter_map(|input| input.key_code)
+        .map(|input| input.key_code)
     {
         match input {
-            KeyCode::Key1 => ev1.send(MyEvent {
-                target,
-                message: "Key 1".into(),
-            }),
-            KeyCode::Key2 => ev2.send(MyEvent {
-                target,
-                message: "Key 2".into(),
-            }),
-            KeyCode::Key3 => ev3.send(MyEvent {
-                target,
-                message: "Key 3".into(),
-            }),
-            KeyCode::Key4 => ev4.send(MyEvent {
-                target,
-                message: "Key 4".into(),
-            }),
-            KeyCode::Key5 => ev5.send(MyEvent {
-                target,
-                message: "Key 5".into(),
-            }),
-            KeyCode::Key6 => ev6.send(MyEvent {
-                target,
-                message: "Key 6".into(),
-            }),
-            KeyCode::Key7 => ev7.send(MyEvent {
-                target,
-                message: "Key 7".into(),
-            }),
+            KeyCode::Digit1 => {
+                ev1.send(MyEvent {
+                    target,
+                    message: "Key 1".into(),
+                });
+            }
+            KeyCode::Digit2 => {
+                ev2.send(MyEvent {
+                    target,
+                    message: "Key 2".into(),
+                });
+            }
+            KeyCode::Digit3 => {
+                ev3.send(MyEvent {
+                    target,
+                    message: "Key 3".into(),
+                });
+            }
+            KeyCode::Digit4 => {
+                ev4.send(MyEvent {
+                    target,
+                    message: "Key 4".into(),
+                });
+            }
+            KeyCode::Digit5 => {
+                ev5.send(MyEvent {
+                    target,
+                    message: "Key 5".into(),
+                });
+            }
+            KeyCode::Digit6 => {
+                ev6.send(MyEvent {
+                    target,
+                    message: "Key 6".into(),
+                });
+            }
+            KeyCode::Digit7 => {
+                ev7.send(MyEvent {
+                    target,
+                    message: "Key 7".into(),
+                });
+            }
             _ => (),
         }
     }

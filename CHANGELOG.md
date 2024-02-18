@@ -1,10 +1,11 @@
-# UNRELEASED
+# 0.7.0
 
+- Changed: Updated to Bevy `0.13`.
 - Changed: ***BREAKING*** `EntityEvent`s no longer bubble by default.
   - If you are using `#[derive(EntityEvent)]`, you will need to add the `#[can_bubble]` attribute to
     enable bubbling.
   - If you are manually implementing the trait, you will need to override the default `can_bubble`
-    trait method and return true.
+    trait method and return `true`.
 - Changed: dissolved the `bevy_eventlistener_core` crate.
 - Changed: `commands_mut`, `target_commands_mut`, `target_component_mut`, `listener_commands_mut`,
   and `listener_component_mut` have been changed to provide a mutable reference to
