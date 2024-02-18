@@ -6,7 +6,7 @@ resolver = "2"
 
 [package]
 name = "bevy_eventlistener"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2021"
 description = "Event listeners and callbacks for bevy"
 license = "MIT OR Apache-2.0"
