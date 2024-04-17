@@ -2,9 +2,10 @@
 //! [`bevy_eventlistener`](crate).
 
 use std::marker::PhantomData;
-use bevy_utils::uuid::Uuid;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
+use bevy_ecs::identifier;
 use bevy_ecs::{
     prelude::*,
     system::{Command, EntityCommands},
@@ -23,18 +24,20 @@ pub trait EntityEvent: Event + Clone {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ListenerHandle<E: EntityEvent> {
-    id: Uuid, // Using Uuid crate for unique identifiers
-    phantom: PhantomData<E>,
+// struct to generate atomic identifiers without the use of global variables
+pub struct ListenerHandle {
+    id_counter: AtomicUsize,
 }
 
-impl<E: EntityEvent> ListenerHandle<E> {
+impl ListenerHandle {
     pub fn new() -> Self {
         Self {
-            id: Uuid::new_v4(), // Generate a new unique identifier
-            phantom: PhantomData,
+            id_counter: AtomicUsize::new(0),
         }
+    }
+
+    pub fn next_id(&self) -> usize {
+        self.id_counter.fetch_add(1, Ordering::SeqCst)
     }
 }
 
@@ -48,7 +51,7 @@ impl<E: EntityEvent> ListenerHandle<E> {
 #[derive(Component, Default)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
-    /// A function that is called when the event listener is triggered.
+    /// use tuple as we want to keep the order of the callbacks with hashmap pattern
     pub(crate) callbacks: Vec<(ListenerHandle<E>, CallbackSystem)>,
 }
 
@@ -58,31 +61,30 @@ impl<E: EntityEvent> On<E> {
     /// systems is that the callback system can access a resource with event data,
     /// [`ListenerInput`]. You can more easily access this with the system params
     /// [`Listener`](crate::callbacks::Listener) and [`ListenerMut`](crate::callbacks::ListenerMut).
-    pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>) -> ListenerHandle<E> {
-        let handle = ListenerHandle::new(); // You need to implement this method
+    pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>, identifier: &ListenerHandleIdentifier) -> ListenerHandle<E> {
+        let id = identifier.next_id();
+        let handle = ListenerHandle::new(id);
         self.callbacks.push((handle.clone(), CallbackSystem::New(Box::new(IntoSystem::into_system(callback)))));
         handle
     }
 
-    /// Create an empty event listener.
-    pub fn init_callbacks(&mut self) {
-        self.callbacks = Vec::new();
+    /// constructor for empty event listener
+    pub fn new() -> Self {
+        Self {
+            phantom: PhantomData,
+            callbacks: Vec::new(),
+        }
     }
 
     /// Remove a callback from this event listener.
-    pub fn remove(&mut self, handle: ListenerHandle<E>)
-    where
-        ListenerHandle<E>: PartialEq,
-    {
-        self.callbacks.retain(|(h, _)| *h != handle);
+    pub fn remove(&mut self, handle: ListenerHandle<E>) {
+        self.callbacks.retain(|(h, _)| h.id != handle.id);
     }
 
     /// Replace a callback with a new one. This is useful for hot-reloading systems.
     pub fn replace<Marker>(&mut self, handle: ListenerHandle<E>, callback: impl IntoSystem<(), (), Marker>)
-    where
-        ListenerHandle<E>: PartialEq,
     {
-        if let Some((_, cb)) = self.callbacks.iter_mut().find(|(h, _)| *h == handle) {
+        if let Some((_, cb)) = self.callbacks.iter_mut().find(|(h, _)| h.id == handle.id) {
             *cb = CallbackSystem::New(Box::new(IntoSystem::into_system(callback)));
         }
     }
@@ -223,17 +225,12 @@ impl<E: EntityEvent> On<E> {
             },
         )
     }
-    
-    /*
-
-    QUESTION: Do we still need this???
 
     /// Take the boxed system callback out of this listener, leaving an empty one behind.
-    pub(crate) fn take(&mut self) -> CallbackSystem {
+    pub(crate) fn take(&mut self, handle: ListenerHandle<E>) -> CallbackSystem {
         let mut temp = CallbackSystem::Empty;
-        std::mem::swap(&mut self.callback, &mut temp);
+        std::mem::swap(&mut self.callbacks, &mut temp);
         temp
     }
 
-    */
 }
