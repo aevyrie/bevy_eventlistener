@@ -84,21 +84,20 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Remove a callback from this event listener.
-    pub fn remove(&mut self, handle: ListenerHandle<E>) {
-        self.callbacks.retain(|(h, _)| h.id != handle.id);
+    pub fn remove(&mut self, handle: usize) {
+        self.callbacks.retain(|(h, _)| *h != handle);
     }
 
     /// Replace a callback with a new one. This is useful for hot-reloading systems.
-    pub fn replace<Marker>(&mut self, handle: ListenerHandle<E>, callback: impl IntoSystem<(), (), Marker>)
-    {
-        if let Some((_, cb)) = self.callbacks.iter_mut().find(|(h, _)| h.id == handle.id) {
+    pub fn replace<Marker>(&mut self, id: usize, callback: impl IntoSystem<(), (), Marker>) {
+        if let Some((_, cb)) = self.callbacks.iter_mut().find(|(h, _)| *h == id) {
             *cb = CallbackSystem::New(Box::new(IntoSystem::into_system(callback)));
         }
     }
 
     /// Add a single [`Command`] any time this event listener is triggered. The command must
     /// implement `From<E>`.
-    pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>(&mut self) -> ListenerHandle<E> {
+    pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>(&mut self) -> usize {
         self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.add(C::from(event.to_owned()));
         })
@@ -108,7 +107,7 @@ impl<E: EntityEvent> On<E> {
     pub fn commands_mut(
         &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut Commands),
-    ) -> ListenerHandle<E> {
+    ) -> usize {
         self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 func(&mut event, &mut commands);
@@ -121,7 +120,7 @@ impl<E: EntityEvent> On<E> {
     pub fn target_commands_mut(
         &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
-    ) -> ListenerHandle<E> {
+    ) -> usize {
         self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 let target = event.target();
@@ -131,7 +130,7 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Insert a bundle on the target entity any time this event listener is triggered.
-    pub fn target_insert(&mut self, bundle: impl Bundle + Clone) -> ListenerHandle<E> {
+    pub fn target_insert(&mut self, bundle: impl Bundle + Clone) -> usize {
         self.run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
@@ -141,7 +140,7 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Remove a bundle from the target entity any time this event listener is triggered.
-    pub fn target_remove<B: Bundle>(&mut self) -> ListenerHandle<E> {
+    pub fn target_remove<B: Bundle>(&mut self) -> usize {
         self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.target()).remove::<B>();
         })
@@ -152,7 +151,7 @@ impl<E: EntityEvent> On<E> {
     pub fn target_component_mut<C: Component>(
         &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
-    ) -> ListenerHandle<E> {
+    ) -> usize {
         self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target()) {
@@ -175,7 +174,7 @@ impl<E: EntityEvent> On<E> {
     pub fn listener_commands_mut(
         &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
-    ) -> ListenerHandle<E> {
+    ) -> usize {
         self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 let listener = event.listener();
@@ -185,7 +184,7 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Insert a bundle on the listener entity any time this event listener is triggered.
-    pub fn listener_insert(&mut self, bundle: impl Bundle + Clone) -> ListenerHandle<E> {
+    pub fn listener_insert(&mut self, bundle: impl Bundle + Clone) -> usize {
         self.run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
@@ -195,7 +194,7 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Remove a bundle from the listener entity any time this event listener is triggered.
-    pub fn listener_remove<B: Bundle>(&mut self) -> ListenerHandle<E> {
+    pub fn listener_remove<B: Bundle>(&mut self) -> usize {
         self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.listener()).remove::<B>();
         })
@@ -206,7 +205,7 @@ impl<E: EntityEvent> On<E> {
     pub fn listener_component_mut<C: Component>(
         &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
-    ) -> ListenerHandle<E> {
+    ) -> usize {
         self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
@@ -225,7 +224,7 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Send an event `F` any time this event listener is triggered.
-    pub fn send_event<F: Event + From<ListenerInput<E>>>(&mut self) -> ListenerHandle<E> {
+    pub fn send_event<F: Event + From<ListenerInput<E>>>(&mut self) -> usize {
         self.run(
             move |event: Res<ListenerInput<E>>, mut ev: EventWriter<F>| {
                 ev.send(F::from(event.to_owned()));
@@ -233,11 +232,9 @@ impl<E: EntityEvent> On<E> {
         )
     }
 
-    /// Take the boxed system callback out of this listener, leaving an empty one behind.
-    pub(crate) fn take(&mut self, handle: ListenerHandle<E>) -> CallbackSystem {
-        let mut temp = CallbackSystem::Empty;
-        std::mem::swap(&mut self.callbacks, &mut temp);
-        temp
+    /// Remove all callbacks from this event listener, leaving it empty.
+    pub(crate) fn take(&mut self) {
+        self.callbacks.clear();
     }
 
 }
