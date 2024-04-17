@@ -232,9 +232,9 @@ impl<E: EntityEvent> On<E> {
         )
     }
 
-    /// Remove all callbacks from this event listener, leaving it empty.
-    pub(crate) fn take(&mut self) {
-        self.callbacks.clear();
+    /// Remove all callbacks from this event listener and return them.
+    pub(crate) fn take(&mut self) -> Vec<(usize, CallbackSystem)> {
+        std::mem::take(&mut self.callbacks)
     }
 
 }
