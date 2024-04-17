@@ -24,18 +24,24 @@ pub trait EntityEvent: Event + Clone {
     }
 }
 
-// struct to generate atomic identifiers without the use of global variables
-pub struct ListenerHandle {
+/// `ListenerHandle` is a struct that generates unique identifiers for event listeners.
+/// It uses an atomic counter to ensure that each ID is unique and that IDs can be generated safely in a multi-threaded context.
+#[derive(Default)]
+pub struct ListenerId {
+    /// An atomic counter used to generate unique IDs for event listeners.
     id_counter: AtomicUsize,
 }
 
-impl ListenerHandle {
+impl ListenerId {
+    /// Creates a new `ListenerHandle` with its internal counter set to 0.
     pub fn new() -> Self {
         Self {
             id_counter: AtomicUsize::new(0),
         }
     }
 
+    /// Generates a new unique ID by incrementing the internal counter and returning its value.
+    /// The `fetch_add` method ensures that this operation is atomic, so it's safe to call in a multi-threaded context.
     pub fn next_id(&self) -> usize {
         self.id_counter.fetch_add(1, Ordering::SeqCst)
     }
@@ -51,8 +57,9 @@ impl ListenerHandle {
 #[derive(Component, Default)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
+    listener_id: ListenerId,
     /// use tuple as we want to keep the order of the callbacks with hashmap pattern
-    pub(crate) callbacks: Vec<(ListenerHandle<E>, CallbackSystem)>,
+    pub(crate) callbacks: Vec<(usize, CallbackSystem)>,
 }
 
 impl<E: EntityEvent> On<E> {
@@ -61,17 +68,17 @@ impl<E: EntityEvent> On<E> {
     /// systems is that the callback system can access a resource with event data,
     /// [`ListenerInput`]. You can more easily access this with the system params
     /// [`Listener`](crate::callbacks::Listener) and [`ListenerMut`](crate::callbacks::ListenerMut).
-    pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>, identifier: &ListenerHandleIdentifier) -> ListenerHandle<E> {
-        let id = identifier.next_id();
-        let handle = ListenerHandle::new(id);
-        self.callbacks.push((handle.clone(), CallbackSystem::New(Box::new(IntoSystem::into_system(callback)))));
-        handle
+    pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>) -> usize {
+        let id = self.listener_id.next_id();
+        self.callbacks.push((id, CallbackSystem::New(Box::new(IntoSystem::into_system(callback)))));
+        id
     }
 
     /// constructor for empty event listener
     pub fn new() -> Self {
         Self {
             phantom: PhantomData,
+            listener_id: ListenerId::new(),
             callbacks: Vec::new(),
         }
     }
