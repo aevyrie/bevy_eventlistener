@@ -5,7 +5,6 @@ use std::marker::PhantomData;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
-use bevy_ecs::identifier;
 use bevy_ecs::{
     prelude::*,
     system::{Command, EntityCommands},
