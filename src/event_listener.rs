@@ -56,6 +56,7 @@ impl ListenerId {
 #[derive(Component, Default)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
+    /// store an atomic counter for generating unique IDs for event listeners
     listener_id: ListenerId,
     /// use tuple as we want to keep the order of the callbacks with hashmap pattern
     pub(crate) callbacks: Vec<(usize, CallbackSystem)>,
@@ -68,7 +69,7 @@ impl<E: EntityEvent> On<E> {
     /// [`ListenerInput`]. You can more easily access this with the system params
     /// [`Listener`](crate::callbacks::Listener) and [`ListenerMut`](crate::callbacks::ListenerMut).
     pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>) -> usize {
-        let id = self.listener_id.next_id();
+        let id = self.listener_id.next_id(); // creates new id and ties to callback, returns id
         self.callbacks.push((id, CallbackSystem::New(Box::new(IntoSystem::into_system(callback)))));
         id
     }
@@ -77,7 +78,8 @@ impl<E: EntityEvent> On<E> {
     pub fn new() -> Self {
         Self {
             phantom: PhantomData,
-            listener_id: ListenerId::new(),
+            // initializes a new listenerId for each EntityEvent, assumes that each EntityEvent will have its own listenerId
+            listener_id: ListenerId::new(), 
             callbacks: Vec::new(),
         }
     }
