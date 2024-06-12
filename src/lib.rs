@@ -111,7 +111,7 @@ fn replace_listener() {
 
     let (tx, rx) = std::sync::mpsc::channel();
     let mut app = App::new();
-    let entity = app.world.spawn_empty().id();
+    let entity = app.world_mut().spawn_empty().id();
     app.add_plugins(MinimalPlugins)
         .add_plugins(EventListenerPlugin::<Foo>::default())
         .add_systems(Update, move |mut event: EventWriter<Foo>| {
@@ -121,12 +121,12 @@ fn replace_listener() {
 
     let sender = tx.clone();
     let callback = On::<Foo>::run(move || sender.send("one").unwrap());
-    app.world.entity_mut(entity).insert(callback);
+    app.world_mut().entity_mut(entity).insert(callback);
     app.update();
 
     let sender = tx.clone();
     let callback = On::<Foo>::run(move || sender.send("two").unwrap());
-    app.world.entity_mut(entity).insert(callback);
+    app.world_mut().entity_mut(entity).insert(callback);
     app.update();
 
     assert_eq!(rx.recv(), Ok("one"));
@@ -147,7 +147,7 @@ fn replace_listener_in_callback() {
 
     let (sender, receiver) = std::sync::mpsc::channel();
     let mut app = App::new();
-    let entity = app.world.spawn_empty().id();
+    let entity = app.world_mut().spawn_empty().id();
     app.add_plugins(MinimalPlugins)
         .add_plugins(EventListenerPlugin::<Foo>::default())
         .add_systems(Update, move |mut event: EventWriter<Foo>| {
@@ -162,7 +162,7 @@ fn replace_listener_in_callback() {
             commands.insert(On::<Foo>::run(move || sender2.send("two").unwrap()));
         },
     );
-    app.world.entity_mut(entity).insert(callback);
+    app.world_mut().entity_mut(entity).insert(callback);
     app.update();
     app.update();
 

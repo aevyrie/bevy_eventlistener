@@ -114,6 +114,6 @@ fn take_damage(
     } else {
         warn!("💀 {} has died a gruesome death", name);
         commands.entity(attack.listener()).despawn_recursive();
-        app_exit.send(bevy::app::AppExit);
+        app_exit.send(bevy::app::AppExit::Success);
     }
 }

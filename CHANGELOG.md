@@ -1,3 +1,7 @@
+# 0.8.0
+
+- Updated to Bevy `0.14.0`
+
 # 0.7.0
 
 - Changed: Updated to Bevy `0.13`.

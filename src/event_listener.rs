@@ -4,10 +4,7 @@
 use std::marker::PhantomData;
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
-use bevy_ecs::{
-    prelude::*,
-    system::{Command, EntityCommands},
-};
+use bevy_ecs::{prelude::*, system::EntityCommands, world::Command};
 #[cfg(feature = "trace")]
 use bevy_utils::tracing::error;
 
