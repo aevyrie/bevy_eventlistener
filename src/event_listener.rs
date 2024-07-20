@@ -29,6 +29,9 @@ pub trait EntityEvent: Event + Clone {
 /// methods are convenience methods that describe the most common functionality. However, because
 /// these all use the public [`On::run`] method internally, you can easily define your own variants
 /// that have the behavior you want!
+///
+/// Cloning should only be done if you know what you are doing. Generally its safe to clone as long
+/// as you only have one clone "living" when you are done cloning.
 #[derive(Component, Default, Clone)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
