@@ -10,9 +10,9 @@ use crate::{event_dispatcher::EventDispatcher, event_listener::EntityEvent};
 pub struct EventListenerSet;
 
 /// Adds event listening and bubbling support for event `E`.
-pub struct EventListenerPlugin<E>(std::marker::PhantomData<E>);
+pub struct EventListenerPlugin<E: EntityEvent>(std::marker::PhantomData<E>);
 
-impl<E> Default for EventListenerPlugin<E> {
+impl<E: EntityEvent> Default for EventListenerPlugin<E> {
     fn default() -> Self {
         Self(std::marker::PhantomData)
     }
