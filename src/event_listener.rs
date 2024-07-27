@@ -2,6 +2,7 @@
 //! [`bevy_eventlistener`](crate).
 
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::callbacks::{CallbackSystem, ListenerInput};
 use bevy_ecs::{prelude::*, system::EntityCommands, world::Command};
@@ -19,6 +20,29 @@ pub trait EntityEvent: Event + Clone {
     }
 }
 
+/// `ListenerHandle` is a struct that generates unique identifiers for event listeners.
+/// It uses an atomic counter to ensure that each ID is unique and that IDs can be generated safely in a multi-threaded context.
+#[derive(Default)]
+pub struct ListenerId {
+    /// An atomic counter used to generate unique IDs for event listeners.
+    id_counter: AtomicUsize,
+}
+
+impl ListenerId {
+    /// Creates a new `ListenerHandle` with its internal counter set to 0.
+    pub fn new() -> Self {
+        Self {
+            id_counter: AtomicUsize::new(0),
+        }
+    }
+
+    /// Generates a new unique ID by incrementing the internal counter and returning its value.
+    /// The `fetch_add` method ensures that this operation is atomic, so it's safe to call in a multi-threaded context.
+    pub fn next_id(&self) -> usize {
+        self.id_counter.fetch_add(1, Ordering::SeqCst)
+    }
+}
+
 /// An event listener with a callback that is triggered when an [`EntityEvent`] bubbles past or
 /// targets this entity.
 ///
@@ -29,8 +53,10 @@ pub trait EntityEvent: Event + Clone {
 #[derive(Component, Default)]
 pub struct On<E: EntityEvent> {
     phantom: PhantomData<E>,
-    /// A function that is called when the event listener is triggered.
-    pub(crate) callback: CallbackSystem,
+    /// store an atomic counter for generating unique IDs for event listeners
+    listener_id: ListenerId,
+    /// use tuple as we want to keep the order of the callbacks with hashmap pattern
+    pub(crate) callbacks: Vec<(usize, CallbackSystem)>,
 }
 
 impl<E: EntityEvent> On<E> {
@@ -39,26 +65,48 @@ impl<E: EntityEvent> On<E> {
     /// systems is that the callback system can access a resource with event data,
     /// [`ListenerInput`]. You can more easily access this with the system params
     /// [`Listener`](crate::callbacks::Listener) and [`ListenerMut`](crate::callbacks::ListenerMut).
-    pub fn run<Marker>(callback: impl IntoSystem<(), (), Marker>) -> Self {
+    pub fn run<Marker>(&mut self, callback: impl IntoSystem<(), (), Marker>) -> usize {
+        let id = self.listener_id.next_id(); // creates new id and ties to callback, returns id
+        self.callbacks.push((id, CallbackSystem::New(Box::new(IntoSystem::into_system(callback)))));
+        id
+    }
+
+    /// constructor for empty event listener
+    pub fn new() -> Self {
         Self {
             phantom: PhantomData,
-            callback: CallbackSystem::New(Box::new(IntoSystem::into_system(callback))),
+            // initializes a new listenerId for each EntityEvent, assumes that each EntityEvent will have its own listenerId
+            listener_id: ListenerId::new(), 
+            callbacks: Vec::new(),
+        }
+    }
+
+    /// Remove a callback from this event listener.
+    pub fn remove(&mut self, handle: usize) {
+        self.callbacks.retain(|(h, _)| *h != handle);
+    }
+
+    /// Replace a callback with a new one. This is useful for hot-reloading systems.
+    pub fn replace<Marker>(&mut self, id: usize, callback: impl IntoSystem<(), (), Marker>) {
+        if let Some((_, cb)) = self.callbacks.iter_mut().find(|(h, _)| *h == id) {
+            *cb = CallbackSystem::New(Box::new(IntoSystem::into_system(callback)));
         }
     }
 
     /// Add a single [`Command`] any time this event listener is triggered. The command must
     /// implement `From<E>`.
-    pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>() -> Self {
-        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+    pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>(&mut self) -> usize {
+        self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.add(C::from(event.to_owned()));
         })
     }
 
     /// Get mutable access to [`Commands`] any time this event listener is triggered.
     pub fn commands_mut(
+        &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut Commands),
-    ) -> Self {
-        Self::run(
+    ) -> usize {
+        self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 func(&mut event, &mut commands);
             },
@@ -68,9 +116,10 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the target entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn target_commands_mut(
+        &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
-    ) -> Self {
-        Self::run(
+    ) -> usize {
+        self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 let target = event.target();
                 func(&mut event, &mut commands.entity(target));
@@ -79,8 +128,8 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Insert a bundle on the target entity any time this event listener is triggered.
-    pub fn target_insert(bundle: impl Bundle + Clone) -> Self {
-        Self::run(
+    pub fn target_insert(&mut self, bundle: impl Bundle + Clone) -> usize {
+        self.run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
                 commands.entity(event.target()).insert(bundle);
@@ -89,8 +138,8 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Remove a bundle from the target entity any time this event listener is triggered.
-    pub fn target_remove<B: Bundle>() -> Self {
-        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+    pub fn target_remove<B: Bundle>(&mut self) -> usize {
+        self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.target()).remove::<B>();
         })
     }
@@ -98,9 +147,10 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the target entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn target_component_mut<C: Component>(
+        &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
-    ) -> Self {
-        Self::run(
+    ) -> usize {
+        self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.target()) {
                     func(&mut event, &mut component);
@@ -120,9 +170,10 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to the listener entity's [`EntityCommands`] using a closure any time this
     /// event listener is triggered.
     pub fn listener_commands_mut(
+        &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut EntityCommands),
-    ) -> Self {
-        Self::run(
+    ) -> usize {
+        self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut commands: Commands| {
                 let listener = event.listener();
                 func(&mut event, &mut commands.entity(listener));
@@ -131,8 +182,8 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Insert a bundle on the listener entity any time this event listener is triggered.
-    pub fn listener_insert(bundle: impl Bundle + Clone) -> Self {
-        Self::run(
+    pub fn listener_insert(&mut self, bundle: impl Bundle + Clone) -> usize {
+        self.run(
             move |event: Res<ListenerInput<E>>, mut commands: Commands| {
                 let bundle = bundle.clone();
                 commands.entity(event.listener()).insert(bundle);
@@ -141,8 +192,8 @@ impl<E: EntityEvent> On<E> {
     }
 
     /// Remove a bundle from the listener entity any time this event listener is triggered.
-    pub fn listener_remove<B: Bundle>() -> Self {
-        Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
+    pub fn listener_remove<B: Bundle>(&mut self) -> usize {
+        self.run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
             commands.entity(event.listener()).remove::<B>();
         })
     }
@@ -150,9 +201,10 @@ impl<E: EntityEvent> On<E> {
     /// Get mutable access to a specific component on the listener entity using a closure any time
     /// this event listener is triggered. If the component does not exist, an error will be logged.
     pub fn listener_component_mut<C: Component>(
+        &mut self,
         mut func: impl 'static + Send + Sync + FnMut(&mut ListenerInput<E>, &mut C),
-    ) -> Self {
-        Self::run(
+    ) -> usize {
+        self.run(
             move |mut event: ResMut<ListenerInput<E>>, mut query: Query<&mut C>| {
                 if let Ok(mut component) = query.get_mut(event.listener()) {
                     func(&mut event, &mut component);
@@ -169,19 +221,18 @@ impl<E: EntityEvent> On<E> {
         )
     }
 
-    /// Send an event `F`  any time this event listener is triggered.
-    pub fn send_event<F: Event + From<ListenerInput<E>>>() -> Self {
-        Self::run(
+    /// Send an event `F` any time this event listener is triggered.
+    pub fn send_event<F: Event + From<ListenerInput<E>>>(&mut self) -> usize {
+        self.run(
             move |event: Res<ListenerInput<E>>, mut ev: EventWriter<F>| {
                 ev.send(F::from(event.to_owned()));
             },
         )
     }
 
-    /// Take the boxed system callback out of this listener, leaving an empty one behind.
-    pub(crate) fn take(&mut self) -> CallbackSystem {
-        let mut temp = CallbackSystem::Empty;
-        std::mem::swap(&mut self.callback, &mut temp);
-        temp
+    /// Remove all callbacks from this event listener and return them.
+    pub(crate) fn take(&mut self) -> Vec<(usize, CallbackSystem)> {
+        std::mem::take(&mut self.callbacks)
     }
+
 }
