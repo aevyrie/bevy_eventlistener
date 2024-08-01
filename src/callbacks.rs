@@ -29,7 +29,6 @@ impl CallbackSystem {
             CallbackSystem::Initialized(system) => system,
         };
         system.run((), world);
-        system.apply_deferred(world);
         *self = CallbackSystem::Initialized(system);
     }
 
