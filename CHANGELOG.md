@@ -1,3 +1,9 @@
+# 0.8.1
+
+- Added the `E: EntityEvent` bound to `EventlistenerPlugin<E>`, to move compile errors from adding the plugin, to the event itself.
+- Fixed a benchmark bug.
+- Added helpful error message when `EntityEvent` derive macro fails to find `#[target]`.
+
 # 0.8.0
 
 - Updated to Bevy `0.14.0`

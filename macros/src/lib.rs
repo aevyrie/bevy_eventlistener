@@ -29,12 +29,12 @@ pub fn derive(input: TokenStream) -> TokenStream {
                     // Get attributes #[..] on each field
                     for attr in field.attrs.iter() {
                         // Parse the attribute
-                        match attr.meta {
-                            // Find the duplicated idents
-                            syn::Meta::Path(ref path) if path.get_ident().unwrap() == "target" => {
-                                target = Some(field.ident.clone());
+                        if let syn::Meta::Path(ref path) = attr.meta {
+                            if let Some(ident) = path.get_ident() {
+                                if ident == "target" {
+                                    target = Some(field.ident.clone());
+                                }
                             }
-                            _ => (),
                         }
                     }
                 }
@@ -44,7 +44,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
         _ => panic!("Must be a struct"),
     }
 
-    let target = target.unwrap();
+    let Some(target) = target else {
+        panic!("Missing `#[target] attribute. You must annotate the field with the target Entity, or instead manually implement EntityEvent.")
+    };
 
     let gen = quote! {
         impl #impl_generics EntityEvent for #name #ty_generics #where_clause {

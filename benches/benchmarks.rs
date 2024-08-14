@@ -37,7 +37,8 @@ fn event_listeners(c: &mut Criterion) {
                 (
                     spawn_listener_hierarchy,
                     add_listeners_to_hierarchy::<DENSITY, 1>,
-                ),
+                )
+                    .chain(),
             )
             .add_plugins(EventListenerPlugin::<TestEvent<1>>::default())
             .add_systems(First, send_events::<1, N_EVENTS>);
