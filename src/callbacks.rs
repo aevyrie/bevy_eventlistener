@@ -1,35 +1,44 @@
 //! Implementation of callbacks as one-shot bevy systems.
 
-use bevy_ecs::{prelude::*, system::BoxedSystem};
+use std::sync::{Arc, RwLock};
+
+use bevy_ecs::prelude::*;
 
 use crate::EntityEvent;
 
+/// An Arc/RwLock wrapped system that allows you to clone.
+type ArcSystem<In = (), Out = ()> = Arc<RwLock<dyn System<In = In, Out = Out>>>;
+
 /// Holds a system, with its own state, that can be run on command from an event listener
 /// [`crate::prelude::On`].
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub enum CallbackSystem {
     /// The system has been removed, because it is currently being executed in the callback graph
     /// for event bubbling.
     #[default]
     Empty,
     /// A system that has not yet been initialized.
-    New(BoxedSystem),
+    New(ArcSystem),
     /// A system that is ready to be executed.
-    Initialized(BoxedSystem),
+    Initialized(ArcSystem),
 }
 
 impl CallbackSystem {
     pub(crate) fn run(&mut self, world: &mut World) {
-        let mut system = match std::mem::take(self) {
+        let system = match std::mem::take(self) {
             CallbackSystem::Empty => return,
-            CallbackSystem::New(mut system) => {
-                system.initialize(world);
+            CallbackSystem::New(system) => {
+                if let Ok(mut system) = system.try_write() {
+                    system.initialize(world);
+                }
                 system
             }
             CallbackSystem::Initialized(system) => system,
         };
-        system.run((), world);
-        system.apply_deferred(world);
+        if let Ok(mut system) = system.try_write() {
+            system.run((), world);
+            system.apply_deferred(world);
+        }
         *self = CallbackSystem::Initialized(system);
     }
 
