@@ -50,7 +50,7 @@ impl<E: EntityEvent> On<E> {
     /// implement `From<E>`.
     pub fn add_command<C: From<ListenerInput<E>> + Command + Send + Sync + 'static>() -> Self {
         Self::run(|event: Res<ListenerInput<E>>, mut commands: Commands| {
-            commands.add(C::from(event.to_owned()));
+            commands.queue(C::from(event.to_owned()));
         })
     }
 
