@@ -19,7 +19,7 @@ fn main() {
             Update,
             (
                 keyboard_events,
-                some_complex_system.run_if(on_event::<DoSomethingComplex>()),
+                some_complex_system.run_if(on_event::<DoSomethingComplex>),
             ),
         )
         .add_event::<DoSomethingComplex>()
@@ -90,7 +90,8 @@ fn setup(mut commands: Commands, mut target_entity: ResMut<TargetEntity>) {
             }),
             // Here we can access the `EntityCommand`s on the target directly:
             On::<MyEvent<6>>::target_commands_mut(|_event, target_commands| {
-                target_commands.log_components();
+                let commands = target_commands.reborrow();
+                commands.log_components();
             }),
             // Unlike the `run` method or any of the helpers above, this will not prevent systems
             // from parallelizing, as the systems that react to this event can be scheduled

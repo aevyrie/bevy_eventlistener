@@ -30,7 +30,7 @@ impl<E: EntityEvent> Plugin for EventListenerPlugin<E> {
                     EventDispatcher::<E>::cleanup,
                 )
                     .chain()
-                    .run_if(on_event::<E>())
+                    .run_if(on_event::<E>)
                     .in_set(EventListenerSet),
             );
     }
