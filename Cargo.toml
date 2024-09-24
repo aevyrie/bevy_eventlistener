@@ -30,11 +30,11 @@ rand = "0.8"
 criterion = "0.5"
 
 [patch.crates-io]
-bevy_app = { path = "../bevy/crates/bevy_app" }
-bevy_ecs = { path = "../bevy/crates/bevy_ecs" }
-bevy_utils = { path = "../bevy/crates/bevy_utils" }
-bevy_hierarchy = { path = "../bevy/crates/bevy_hierarchy" }
-bevy = { path = "../bevy" }
+bevy_app = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_ecs = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_utils = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_hierarchy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
 
 [[bench]]
 name = "benchmarks"
