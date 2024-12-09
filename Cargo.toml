@@ -16,18 +16,21 @@ categories = ["game-engines", "rendering"]
 
 [dependencies]
 bevy_eventlistener_derive = { path = "macros", version = "0.8.0" }
-bevy_ecs = "0.14.0"
-bevy_app = "0.14.0"
-bevy_utils = "0.14.0"
-bevy_hierarchy = "0.14.0"
+bevy_ecs = "0.15.0"
+bevy_app = "0.15.0"
+bevy_utils = "0.15.0"
+bevy_hierarchy = "0.15.0"
 
 [dev-dependencies]
-bevy = { version = "0.14.0", default-features = false, features = [
+bevy = { version = "0.15.0", default-features = false, features = [
     "bevy_winit",
     "x11",
 ] }
 rand = "0.8"
 criterion = "0.5"
+
+[features]
+trace = []
 
 [[bench]]
 name = "benchmarks"
