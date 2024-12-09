@@ -68,7 +68,7 @@
 //! - Depth: 64 (how many levels of children for an entity at the root)
 //! - Total nodes: 12,800 (total number of entities spawned)
 //! - Listener density: 20% (what percent of entities have event listeners?)
-//! ![image](https://github.com/aevyrie/bevy_eventlistener/assets/2632925/72f75640-8b44-4ace-af67-9898c4c78321)
+//!   ![image](https://github.com/aevyrie/bevy_eventlistener/assets/2632925/72f75640-8b44-4ace-af67-9898c4c78321)
 //!
 //! The blue line can be read as "how long does it take all of these events to bubble up a hierarchy
 //! and trigger callbacks at ~20% of the 64 nodes as it traverses depth?". A graph is built for
