@@ -1,3 +1,7 @@
+> [!Important]
+> This crate has been archived since `bevy_mod_picking` was upstreamed using bevy `Oberver`s instead of `bevy_eventlistener`
+> https://bevyengine.org/news/bevy-0-15/#entity-picking-selection
+
 <div align="center">
 
 # Event listeners, bubbling, and callbacks for Bevy
