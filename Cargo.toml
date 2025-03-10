@@ -16,18 +16,25 @@ categories = ["game-engines", "rendering"]
 
 [dependencies]
 bevy_eventlistener_derive = { path = "macros", version = "0.8.0" }
-bevy_ecs = "0.14.0"
-bevy_app = "0.14.0"
-bevy_utils = "0.14.0"
-bevy_hierarchy = "0.14.0"
+bevy_ecs = "0.15.0-dev"
+bevy_app = "0.15.0-dev"
+bevy_utils = "0.15.0-dev"
+bevy_hierarchy = "0.15.0-dev"
 
 [dev-dependencies]
-bevy = { version = "0.14.0", default-features = false, features = [
+bevy = { version = "0.15.0-dev", default-features = false, features = [
     "bevy_winit",
     "x11",
 ] }
 rand = "0.8"
 criterion = "0.5"
+
+[patch.crates-io]
+bevy_app = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_ecs = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_utils = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy_hierarchy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "9386bd0114c44c9f00a2e9c41db1225aaa78d159" }
 
 [[bench]]
 name = "benchmarks"
