@@ -19,7 +19,7 @@ fn main() {
             Update,
             (
                 keyboard_events,
-                some_complex_system.run_if(on_event::<DoSomethingComplex>()),
+                some_complex_system.run_if(on_event::<DoSomethingComplex>),
             ),
         )
         .add_event::<DoSomethingComplex>()
